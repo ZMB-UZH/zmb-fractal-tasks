@@ -20,7 +20,7 @@ def test_segment_cellpose_simple(temp_dir, zarr_name):
         level="2",
         channel=NormalizedChannelInputModel(
             label="DAPI",
-            normalize=CustomNormalizer(mode="default"),
+            normalize=CustomNormalizer(mode="omero"),
         ),
         diameter = 60.0,
     )

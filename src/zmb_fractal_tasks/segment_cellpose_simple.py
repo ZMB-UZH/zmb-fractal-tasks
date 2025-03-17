@@ -152,8 +152,8 @@ def segment_ROIs(
         images = [
             normalized_image(
                 img,
-                lower_p=normalize.lower,
-                upper_p=normalize.upper,
+                lower_p=normalize.lower_percentile,
+                upper_p=normalize.upper_percentile,
                 lower_bound=normalize.lower_bound,
                 upper_bound=normalize.upper_bound,
             )
