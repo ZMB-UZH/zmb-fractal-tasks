@@ -1,3 +1,5 @@
+"""Merge labels from one OME-Zarr image to another."""
+
 import shutil
 from collections.abc import Sequence
 from pathlib import Path
