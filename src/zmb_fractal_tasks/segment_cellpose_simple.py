@@ -119,16 +119,19 @@ def segment_cellpose_simple(
     # save segmentations
     max_label = 0
     for roi, mask in zip(roi_table.rois(), masks):
-        binary = mask > 0
-        mask[binary] += max_label
-        max_label = mask.max()
+        if mask.max() > 0:
+            binary = mask > 0
+            mask[binary] += max_label
+            max_label = mask.max()
         label_image.set_roi(patch=mask[None,...], roi=roi)
 
     # Consolidate the segmentation image
     label_image.consolidate()
-    # TODO: Fix consolidation at higher lavels (wait for ngio?)
+    # TODO: Fix consolidation at higher levels (wait for ngio?)
 
     # TODO: Add ROI table with bounding boxes of the labels
+    if output_ROI_table is not None:
+        raise NotImplementedError("ROI table output not implemented yet")
 
     # TODO: fix label .zattrs (wait for ngio update)
     # QUICK FIX: Manually adjust the label image .zattrs
