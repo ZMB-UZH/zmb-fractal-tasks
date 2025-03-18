@@ -64,12 +64,12 @@ def merge_labels(
 
             path_origin = Path(zarr_url_origin) / "labels" / label_name
             path_target = Path(zarr_url_target) / "labels" / label_name
-            shutil.rmtree(str(path_target))
             shutil.copytree(str(path_origin), str(path_target))
         else:
             if overwrite:
                 path_origin = Path(zarr_url_origin) / "labels" / label_name
                 path_target = Path(zarr_url_target) / "labels" / label_name
+                shutil.rmtree(str(path_target))
                 shutil.copytree(str(path_origin), str(path_target))
             else:
                 raise ValueError(
