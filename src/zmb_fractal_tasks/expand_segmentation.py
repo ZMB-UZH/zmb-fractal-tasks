@@ -21,9 +21,11 @@ def expand_segmentation(
     # Core parameters
     input_ROI_table: str = "FOV_ROI_table",
     input_label_name: str = "nuclei",
-    output_label_name: Optional[str] = None,
-    output_ROI_table: Optional[str] = None,
     expansion_distance: int = 0,
+    save_union: bool = True,
+    output_label_name_union: Optional[str] = "cells",
+    save_diff: bool = True,
+    output_label_name_diff: Optional[str] = "cytoplasms",
     overwrite: bool = True,
 ) -> None:
     """Expand the labels on the ROIs of a single OME-Zarr image.
@@ -38,12 +40,16 @@ def expand_segmentation(
             the field of views,as one image.
         input_label_name: Name of the input label image to be expanded (e.g.
             `"nuclei"`).
-        output_label_name: Name of the output label image (e.g. `"cells"`).
-        output_ROI_table: If provided, a ROI table with that name is created,
-            which will contain the bounding boxes of the newly segmented
-            labels. ROI tables should have `ROI` in their name.
         expansion_distance: Distance by which the labels are expanded, in
             pixels at level 0.
+        save_union: If `True`, save the union of the original and expanded
+            labels. (corresponds to e.g. the intire cell)
+        output_label_name_union: Name of the output label image for the union
+            (e.g. `"cells"`).
+        save_diff: If `True`, save the difference between the original and
+            expanded labels. (corresponds to e.g. the cytoplasm)
+        output_label_name_diff: Name of the output label image for the
+            difference (e.g. `"cytoplasms"`).
         overwrite: If `True`, overwrite the task output.
     """
     omezarr = open_omezarr_container(zarr_url)
@@ -51,33 +57,57 @@ def expand_segmentation(
 
     roi_table = omezarr.get_table(input_ROI_table, check_type="roi_table")
 
-    if output_label_name is None:
-        output_label_name = f"{input_label_name}_expanded"
-
-    output_label_image = omezarr.derive_label(
-        name=output_label_name, overwrite=overwrite, dtype=input_label_image.dtype
-    )
+    if save_union:
+        output_label_image_union = omezarr.derive_label(
+            name=output_label_name_union,
+            overwrite=overwrite,
+            dtype=input_label_image.dtype,
+        )
+    if save_diff:
+        output_label_image_diff = omezarr.derive_label(
+            name=output_label_name_diff,
+            overwrite=overwrite,
+            dtype=input_label_image.dtype,
+        )
 
     for roi in roi_table.rois():
         patch = input_label_image.get_roi(roi)
         segmentation = expand_labels_ROI(patch, expansion_distance=expansion_distance)
-
-        output_label_image.set_roi(patch=segmentation, roi=roi)
+        if save_union:
+            output_label_image_union.set_roi(patch=segmentation, roi=roi)
+        if save_diff:
+            output_label_image_diff.set_roi(patch=segmentation - patch, roi=roi)
 
     # Consolidate the segmentation image
-    output_label_image.consolidate()
+    if save_union:
+        output_label_image_union.consolidate()
+    if save_diff:
+        output_label_image_diff.consolidate()
 
     # TODO: Add ROI table with bounding boxes of the labels
 
     # TODO: fix label .zattrs (wait for ngio update)
     # QUICK FIX: Manually adjust the label image .zattrs
-    with open(Path(zarr_url) / "labels" / output_label_name / ".zattrs", "r+") as f:
-        json_data = json.load(f)
-        json_data["image-label"] = json_data.pop("image_label")
-        json_data["multiscales"][0]["name"] = output_label_name
-        f.seek(0)
-        json.dump(json_data, f, indent=4)
-        f.truncate()
+    if save_union:
+        with open(
+            Path(zarr_url) / "labels" / output_label_name_union / ".zattrs", "r+"
+        ) as f:
+            json_data = json.load(f)
+            json_data["image-label"] = json_data.pop("image_label")
+            json_data["multiscales"][0]["name"] = output_label_name_union
+            f.seek(0)
+            json.dump(json_data, f, indent=4)
+            f.truncate()
+    if save_diff:
+        with open(
+            Path(zarr_url) / "labels" / output_label_name_diff / ".zattrs", "r+"
+        ) as f:
+            json_data = json.load(f)
+            json_data["image-label"] = json_data.pop("image_label")
+            json_data["multiscales"][0]["name"] = output_label_name_diff
+            f.seek(0)
+            json.dump(json_data, f, indent=4)
+            f.truncate()
 
 
 def expand_labels_ROI(

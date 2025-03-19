@@ -14,7 +14,10 @@ def test_expand_segmentation(temp_dir, zarr_name):
     expand_segmentation(
         zarr_url=str(temp_dir / zarr_name / "B" / "03" / "0"),
         input_label_name="nuclei",
-        output_label_name="nuclei_expanded",
         expansion_distance=10,
+        save_union=True,
+        output_label_name_union="cells",
+        save_diff=True,
+        output_label_name_diff="cytoplasms",
     )
     # TODO: Check outputs
