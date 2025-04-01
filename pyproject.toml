@@ -29,10 +29,12 @@ requires-python = ">=3.11"
 dependencies = [
     "aicssegmentation",
     "basicpy",
+    "cellpose",
     "dask",
     #"fractal-tasks-core",
     "ngio == v0.2.0alpha3",
     "numpy",
+    "pandas",
     "pydantic",
     "scikit-image",
     "scipy",

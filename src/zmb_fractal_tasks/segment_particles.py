@@ -1,6 +1,8 @@
 """Segment spot-like particles."""
 
+import json
 from collections.abc import Sequence
+from pathlib import Path
 from typing import Optional
 
 # import fractal_tasks_core
@@ -120,9 +122,10 @@ def segment_particles(
             normalize=channel.normalize,
         )
         # Add the max label of the previous segmentation to avoid overlapping labels
-        binary = segmentation > 0
-        segmentation[binary] += max_label
-        max_label = segmentation.max()
+        if segmentation.max() > 0:
+            binary = segmentation > 0
+            segmentation[binary] += max_label
+            max_label = segmentation.max()
 
         segmentation = segmentation[0]  # drop channel axis TODO: ask if necessary
 
@@ -132,7 +135,18 @@ def segment_particles(
     label_image.consolidate()
 
     # TODO: Add ROI table with bounding boxes of the labels
-    # TODO: fix label .zattrs
+    if output_ROI_table is not None:
+        raise NotImplementedError("ROI table output not implemented yet")
+
+    # TODO: fix label .zattrs (wait for ngio update)
+    # QUICK FIX: Manually adjust the label image .zattrs
+    with open(Path(zarr_url) / "labels" / output_label_name / ".zattrs", "r+") as f:
+        json_data = json.load(f)
+        json_data["image-label"] = json_data.pop("image_label")
+        json_data["multiscales"][0]["name"] = output_label_name
+        f.seek(0)
+        json.dump(json_data, f, indent=4)
+        f.truncate()
 
 
 def gaussian_laplace_threshold(
@@ -251,8 +265,8 @@ def segment_ROI(
     elif normalize.mode == "custom":
         img = normalized_image(
             img,
-            lower_p=normalize.lower,
-            upper_p=normalize.upper,
+            lower_p=normalize.lower_percentile,
+            upper_p=normalize.upper_percentile,
             lower_bound=normalize.lower_bound,
             upper_bound=normalize.upper_bound,
         )
