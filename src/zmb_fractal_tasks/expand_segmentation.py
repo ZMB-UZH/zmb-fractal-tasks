@@ -16,9 +16,9 @@ def expand_segmentation(
     input_label_name: str = "nuclei",
     expansion_distance: int = 0,
     save_union: bool = True,
-    output_label_name_union: Optional[str] = "cells",
+    output_label_name_union: Optional[str] = None,
     save_diff: bool = True,
-    output_label_name_diff: Optional[str] = "cytoplasms",
+    output_label_name_diff: Optional[str] = None,
     overwrite: bool = True,
 ) -> None:
     """Expand the labels on the ROIs of a single OME-Zarr image.

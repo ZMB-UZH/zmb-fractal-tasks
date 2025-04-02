@@ -5,7 +5,8 @@
       "name": "BaSiC: Apply illumination profile",
       "category": "Image Processing",
       "tags": [
-        "Illumination correction"
+        "Illumination correction",
+        "BaSiC"
       ],
       "type": "parallel",
       "executable_parallel": "basic_apply_illumination_profile.py",
@@ -46,6 +47,690 @@
         "title": "BasicApplyIlluminationProfile"
       },
       "docs_info": "## basic_apply_illumination_profile\nApplies illumination correction to the OME-Zarr.\n"
+    },
+    {
+      "name": "BaSiC: Calculate illumination profile for plate",
+      "category": "Image Processing",
+      "tags": [
+        "Illumination correction",
+        "BaSiC"
+      ],
+      "type": "non_parallel",
+      "executable_non_parallel": "basic_calculate_illumination_profile_plate.py",
+      "meta_non_parallel": {
+        "cpus_per_task": 1,
+        "mem": 4000
+      },
+      "args_schema_non_parallel": {
+        "additionalProperties": false,
+        "properties": {
+          "zarr_urls": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Zarr Urls",
+            "type": "array",
+            "description": "List of paths or urls to the individual OME-Zarr images to be processed. (Standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "zarr_dir": {
+            "title": "Zarr Dir",
+            "type": "string",
+            "description": "Not used for this task. (Standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "illumination_profiles_folder": {
+            "title": "Illumination Profiles Folder",
+            "type": "string",
+            "description": "Path to folder where illumination profiles will be saved."
+          },
+          "n_images": {
+            "default": 128,
+            "title": "N Images",
+            "type": "integer",
+            "description": "Number of images to sample for illumination correction."
+          },
+          "overwrite": {
+            "default": false,
+            "title": "Overwrite",
+            "type": "boolean",
+            "description": "If True, overwrite existing illumination profiles."
+          },
+          "random_seed": {
+            "title": "Random Seed",
+            "type": "integer",
+            "description": "integer random seed to initialize random number generator. None will result in non-reproducibel outputs."
+          },
+          "basic_smoothness": {
+            "default": 1,
+            "title": "Basic Smoothness",
+            "type": "number",
+            "description": "Smoothing parameter for BaSiC (used for both flat- and dark-field)."
+          },
+          "get_darkfield": {
+            "default": true,
+            "title": "Get Darkfield",
+            "type": "boolean",
+            "description": "If True, calculate darkfield correction."
+          }
+        },
+        "required": [
+          "zarr_urls",
+          "zarr_dir",
+          "illumination_profiles_folder"
+        ],
+        "type": "object",
+        "title": "BasicCalculateIlluminationProfilePlate"
+      },
+      "docs_info": "## basic_calculate_illumination_profile_plate\nCalculate illumination profiles for all channels in a plate using BaSiC.\n\nCalculates illumination correction profiles based on a random sample\nof FOVs for each channel.\nNOTE: This assumes that all FOVs in the plate have the same dimensions.\n"
+    },
+    {
+      "name": "Calculate percentiles",
+      "category": "Measurement",
+      "tags": [
+        "Percentiles",
+        "Histogram",
+        "Normalization"
+      ],
+      "type": "parallel",
+      "executable_parallel": "calculate_percentiles.py",
+      "meta_parallel": {
+        "cpus_per_task": 1,
+        "mem": 4000
+      },
+      "args_schema_parallel": {
+        "additionalProperties": false,
+        "properties": {
+          "zarr_url": {
+            "title": "Zarr Url",
+            "type": "string",
+            "description": "Absolute path to the OME-Zarr image. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "level": {
+            "default": "0",
+            "title": "Level",
+            "type": "string",
+            "description": "Resolution level to calculate percentiles on."
+          },
+          "percentiles": {
+            "default": [
+              1,
+              99
+            ],
+            "items": {
+              "type": "number"
+            },
+            "title": "Percentiles",
+            "type": "array",
+            "description": "lower and upper percentiles to calculate"
+          }
+        },
+        "required": [
+          "zarr_url"
+        ],
+        "type": "object",
+        "title": "CalculatePercentiles"
+      },
+      "docs_info": "## calculate_percentiles\nCalculate percentiles of image and write them to omero-channels.\n"
+    },
+    {
+      "name": "Expand segmentation",
+      "category": "Segmentation",
+      "tags": [
+        "Expand"
+      ],
+      "type": "parallel",
+      "executable_parallel": "expand_segmentation.py",
+      "meta_parallel": {
+        "cpus_per_task": 1,
+        "mem": 4000
+      },
+      "args_schema_parallel": {
+        "additionalProperties": false,
+        "properties": {
+          "zarr_url": {
+            "title": "Zarr Url",
+            "type": "string",
+            "description": "Path or url to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "input_ROI_table": {
+            "default": "FOV_ROI_table",
+            "title": "Input Roi Table",
+            "type": "string",
+            "description": "Name of `organoid_ROI_table` => loop over the organoid ROI table (generated by another task), `well_ROI_table` => process the whole well the ROI table over which the task loops to expand labels. Examples: `FOV_ROI_table` => loop over the field of views,as one image."
+          },
+          "input_label_name": {
+            "default": "nuclei",
+            "title": "Input Label Name",
+            "type": "string",
+            "description": "Name of the input label image to be expanded (e.g. `\"nuclei\"`)."
+          },
+          "expansion_distance": {
+            "default": 0,
+            "title": "Expansion Distance",
+            "type": "integer",
+            "description": "Distance by which the labels are expanded, in pixels at level 0."
+          },
+          "save_union": {
+            "default": true,
+            "title": "Save Union",
+            "type": "boolean",
+            "description": "If `True`, save the union of the original and expanded labels. (corresponds to e.g. the intire cell)"
+          },
+          "output_label_name_union": {
+            "title": "Output Label Name Union",
+            "type": "string",
+            "description": "Name of the output label image for the union (e.g. `\"cells\"`)."
+          },
+          "save_diff": {
+            "default": true,
+            "title": "Save Diff",
+            "type": "boolean",
+            "description": "If `True`, save the difference between the original and expanded labels. (corresponds to e.g. the cytoplasm)"
+          },
+          "output_label_name_diff": {
+            "title": "Output Label Name Diff",
+            "type": "string",
+            "description": "Name of the output label image for the difference (e.g. `\"cytoplasms\"`)."
+          },
+          "overwrite": {
+            "default": true,
+            "title": "Overwrite",
+            "type": "boolean",
+            "description": "If `True`, overwrite the task output."
+          }
+        },
+        "required": [
+          "zarr_url"
+        ],
+        "type": "object",
+        "title": "ExpandSegmentation"
+      },
+      "docs_info": "## expand_segmentation\nExpand the labels on the ROIs of a single OME-Zarr image.\n"
+    },
+    {
+      "name": "Measure features",
+      "category": "Measurement",
+      "tags": [
+        "Measure"
+      ],
+      "type": "parallel",
+      "executable_parallel": "measure_features.py",
+      "meta_parallel": {
+        "cpus_per_task": 1,
+        "mem": 4000
+      },
+      "args_schema_parallel": {
+        "$defs": {
+          "ChannelInputModel": {
+            "description": "A channel which is specified by either `wavelength_id` or `label`.",
+            "properties": {
+              "wavelength_id": {
+                "title": "Wavelength Id",
+                "type": "string"
+              },
+              "label": {
+                "title": "Label",
+                "type": "string"
+              }
+            },
+            "title": "ChannelInputModel",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "zarr_url": {
+            "title": "Zarr Url",
+            "type": "string",
+            "description": "Path or url to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "output_table_name": {
+            "title": "Output Table Name",
+            "type": "string",
+            "description": "Name of the output table."
+          },
+          "label_name": {
+            "title": "Label Name",
+            "type": "string",
+            "description": "Name of the label that contains the seeds. Needs to exist in OME-Zarr file."
+          },
+          "annotation_label_names": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Annotation Label Names",
+            "type": "array",
+            "description": "List of label names that should be used to annotate the labels. Need to exist in OME-Zarr file."
+          },
+          "shortest_distance_label_names": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Shortest Distance Label Names",
+            "type": "array",
+            "description": "List of label names that should be used to calculate the shortest distance to the labels. Need to exist in OME-Zarr file."
+          },
+          "channels_to_include": {
+            "items": {
+              "$ref": "#/$defs/ChannelInputModel"
+            },
+            "title": "Channels To Include",
+            "type": "array",
+            "description": "List of channels to include for intensity and texture measurements. Use the channel label to indicate single channels. If None, all channels are included."
+          },
+          "channels_to_exclude": {
+            "items": {
+              "$ref": "#/$defs/ChannelInputModel"
+            },
+            "title": "Channels To Exclude",
+            "type": "array",
+            "description": "List of channels to exclude for intensity and texture measurements. Use the channel label to indicate single channels. If None, no channels are excluded."
+          },
+          "structure_props": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Structure Props",
+            "type": "array",
+            "description": "List of regionprops structure properties to measure."
+          },
+          "intensity_props": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Intensity Props",
+            "type": "array",
+            "description": "List of regionprops intensity properties to measure. ROI_table_name: Name of the ROI table to process."
+          },
+          "level": {
+            "default": "0",
+            "title": "Level",
+            "type": "string",
+            "description": "Resolution of the label image to calculate features. Only tested for level 0."
+          },
+          "overwrite": {
+            "default": true,
+            "title": "Overwrite",
+            "type": "boolean",
+            "description": "If True, overwrite existing feature table."
+          }
+        },
+        "required": [
+          "zarr_url",
+          "output_table_name",
+          "label_name"
+        ],
+        "type": "object",
+        "title": "MeasureFeatures"
+      },
+      "docs_info": "## measure_features\nCalculate features based on label image and intensity image (optional).\n\nTakes a label image and an optional intensity image and calculates\nmorphology, intensity and texture features in 2D.\n\nTODO: Currently only works for well-plates, since it also writes well_name.\n"
+    },
+    {
+      "name": "Cellpose segmentation, simple",
+      "category": "Segmentation",
+      "tags": [
+        "Cellpose",
+        "Segmentation"
+      ],
+      "type": "parallel",
+      "executable_parallel": "segment_cellpose_simple.py",
+      "meta_parallel": {
+        "cpus_per_task": 1,
+        "mem": 4000
+      },
+      "args_schema_parallel": {
+        "$defs": {
+          "CustomNormalizer": {
+            "description": "Validator to handle different image normalization scenarios.",
+            "properties": {
+              "mode": {
+                "default": "default",
+                "enum": [
+                  "default",
+                  "custom",
+                  "omero",
+                  "no_normalization"
+                ],
+                "title": "Mode",
+                "type": "string"
+              },
+              "lower_percentile": {
+                "maximum": 100.0,
+                "minimum": 0.0,
+                "title": "Lower Percentile",
+                "type": "number"
+              },
+              "upper_percentile": {
+                "maximum": 100.0,
+                "minimum": 0.0,
+                "title": "Upper Percentile",
+                "type": "number"
+              },
+              "lower_bound": {
+                "title": "Lower Bound",
+                "type": "integer"
+              },
+              "upper_bound": {
+                "title": "Upper Bound",
+                "type": "integer"
+              }
+            },
+            "title": "CustomNormalizer",
+            "type": "object"
+          },
+          "NormalizedChannelInputModel": {
+            "description": "Channel input with normalization options.",
+            "properties": {
+              "wavelength_id": {
+                "title": "Wavelength Id",
+                "type": "string"
+              },
+              "label": {
+                "title": "Label",
+                "type": "string"
+              },
+              "normalize": {
+                "$ref": "#/$defs/CustomNormalizer",
+                "title": "Normalize"
+              }
+            },
+            "title": "NormalizedChannelInputModel",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "zarr_url": {
+            "title": "Zarr Url",
+            "type": "string",
+            "description": "Path or url to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "level": {
+            "default": "0",
+            "title": "Level",
+            "type": "string",
+            "description": "Pyramid level of the image to be segmented. Choose `0` to process at full resolution."
+          },
+          "channel": {
+            "$ref": "#/$defs/NormalizedChannelInputModel",
+            "title": "Channel",
+            "description": "Channel for segmentation; requires either `wavelength_id` (e.g. `A01_C01`) or `label` (e.g. `DAPI`), but not both. Also contains normalization options: 'default': Data is normalized so 0.0=1st percentile and 1.0=99th percentile of image intensities. 'no_normalization': No normalization is applied. 'custom': You can either provide your own rescaling percentiles or fixed rescaling upper and lower bound integers. 'omero': The \"start\" and \"end\" values from the omero channels in the zarr file are used for upper and lower bounds."
+          },
+          "input_ROI_table": {
+            "default": "FOV_ROI_table",
+            "title": "Input Roi Table",
+            "type": "string",
+            "description": "Name of the ROI table over which the task loops to apply segmentation. Examples: `FOV_ROI_table` => loop over the field of views, `organoid_ROI_table` => loop over the organoid ROI table (generated by another task), `well_ROI_table` => process the whole well as one image."
+          },
+          "output_ROI_table": {
+            "title": "Output Roi Table",
+            "type": "string",
+            "description": "If provided, a ROI table with that name is created, which will contain the bounding boxes of the newly segmented labels. ROI tables should have `ROI` in their name."
+          },
+          "output_label_name": {
+            "title": "Output Label Name",
+            "type": "string",
+            "description": "Name of the output label image (e.g. `\"organoids\"`)."
+          },
+          "gpu": {
+            "default": false,
+            "title": "Gpu",
+            "type": "boolean",
+            "description": "If `True`, use the GPU for segmentation."
+          },
+          "model_type": {
+            "default": "nuclei",
+            "title": "Model Type",
+            "type": "string",
+            "description": "Type of cellpose model to use for segmentation."
+          },
+          "batch_size": {
+            "default": 8,
+            "title": "Batch Size",
+            "type": "integer",
+            "description": "Batch size for cellpose."
+          },
+          "diameter": {
+            "default": 30.0,
+            "title": "Diameter",
+            "type": "number",
+            "description": "Diameter of the objects to be segmented (pixels at level 0)."
+          },
+          "resample": {
+            "default": false,
+            "title": "Resample",
+            "type": "boolean",
+            "description": "Run dynamics at original image size (will be slower but create more accurate boundaries)."
+          },
+          "overwrite": {
+            "default": true,
+            "title": "Overwrite",
+            "type": "boolean",
+            "description": "If `True`, overwrite the task output."
+          }
+        },
+        "required": [
+          "zarr_url",
+          "channel"
+        ],
+        "type": "object",
+        "title": "SegmentCellposeSimple"
+      },
+      "docs_info": "## segment_cellpose_simple\nSegment a single channel using cellpose.\n"
+    },
+    {
+      "name": "Segment particles",
+      "category": "Segmentation",
+      "tags": [
+        "Spot",
+        "Segmentation",
+        "Allen",
+        "Allen Cell & Structure Segmenter"
+      ],
+      "type": "parallel",
+      "executable_parallel": "segment_particles.py",
+      "meta_parallel": {
+        "cpus_per_task": 1,
+        "mem": 4000
+      },
+      "args_schema_parallel": {
+        "$defs": {
+          "CustomNormalizer": {
+            "description": "Validator to handle different image normalization scenarios.",
+            "properties": {
+              "mode": {
+                "default": "default",
+                "enum": [
+                  "default",
+                  "custom",
+                  "omero",
+                  "no_normalization"
+                ],
+                "title": "Mode",
+                "type": "string"
+              },
+              "lower_percentile": {
+                "maximum": 100.0,
+                "minimum": 0.0,
+                "title": "Lower Percentile",
+                "type": "number"
+              },
+              "upper_percentile": {
+                "maximum": 100.0,
+                "minimum": 0.0,
+                "title": "Upper Percentile",
+                "type": "number"
+              },
+              "lower_bound": {
+                "title": "Lower Bound",
+                "type": "integer"
+              },
+              "upper_bound": {
+                "title": "Upper Bound",
+                "type": "integer"
+              }
+            },
+            "title": "CustomNormalizer",
+            "type": "object"
+          },
+          "NormalizedChannelInputModel": {
+            "description": "Channel input with normalization options.",
+            "properties": {
+              "wavelength_id": {
+                "title": "Wavelength Id",
+                "type": "string"
+              },
+              "label": {
+                "title": "Label",
+                "type": "string"
+              },
+              "normalize": {
+                "$ref": "#/$defs/CustomNormalizer",
+                "title": "Normalize"
+              }
+            },
+            "title": "NormalizedChannelInputModel",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "zarr_url": {
+            "title": "Zarr Url",
+            "type": "string",
+            "description": "Path or url to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "level": {
+            "default": "0",
+            "title": "Level",
+            "type": "string",
+            "description": "Pyramid level of the image to be segmented. Choose `0` to process at full resolution."
+          },
+          "channel": {
+            "$ref": "#/$defs/NormalizedChannelInputModel",
+            "title": "Channel",
+            "description": "Channel for segmentation; requires either `wavelength_id` (e.g. `A01_C01`) or `label` (e.g. `DAPI`), but not both. Also contains normalization options: 'default': Data is normalized so 0.0=1st percentile and 1.0=99th percentile of image intensities. 'no_normalization': No normalization is applied. 'custom': You can either provide your own rescaling percentiles or fixed rescaling upper and lower bound integers. 'omero': The \"start\" and \"end\" values from the omero channels in the zarr file are used for upper and lower bounds."
+          },
+          "input_ROI_table": {
+            "default": "FOV_ROI_table",
+            "title": "Input Roi Table",
+            "type": "string",
+            "description": "Name of the ROI table over which the task loops to apply segmentation. Examples: `FOV_ROI_table` => loop over the field of views, `organoid_ROI_table` => loop over the organoid ROI table (generated by another task), `well_ROI_table` => process the whole well as one image."
+          },
+          "output_ROI_table": {
+            "title": "Output Roi Table",
+            "type": "string",
+            "description": "If provided, a ROI table with that name is created, which will contain the bounding boxes of the newly segmented labels. ROI tables should have `ROI` in their name."
+          },
+          "output_label_name": {
+            "title": "Output Label Name",
+            "type": "string",
+            "description": "Name of the output label image (e.g. `\"organoids\"`)."
+          },
+          "gaussian_smoothing_sigma": {
+            "title": "Gaussian Smoothing Sigma",
+            "type": "number",
+            "description": "sigma for preprocessing gaussian filter (in pixels @ level0)"
+          },
+          "s2_param": {
+            "default": [
+              [
+                1,
+                0.04
+              ]
+            ],
+            "items": {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            "title": "S2 Param",
+            "type": "array",
+            "description": "list of list of parameters for segmentation. The first element is the sigma for the laplacian of gaussian, and the second element is the threshold for the filtered image: [[sigma1, threshold1], [sigma2, threshold2], ...] e.g. [[1, 0.04], [1.5, 0.8], [2, 0.15], [4, 0.20]] (sigma in pixels @ chosen level)"
+          },
+          "fill_2d": {
+            "default": true,
+            "title": "Fill 2D",
+            "type": "boolean",
+            "description": "If True, holes will be filled"
+          },
+          "fill_max_size": {
+            "default": 1000,
+            "title": "Fill Max Size",
+            "type": "number",
+            "description": "maximum hole-size to be filled (in pixels @ level0)"
+          },
+          "overwrite": {
+            "default": true,
+            "title": "Overwrite",
+            "type": "boolean",
+            "description": "If `True`, overwrite the task output."
+          }
+        },
+        "required": [
+          "zarr_url",
+          "channel"
+        ],
+        "type": "object",
+        "title": "SegmentParticles"
+      },
+      "docs_info": "## segment_particles\nSegment spot-like particles in 2D image.\n\nFunction inspired by the Allen Cell & Structure Segmenter. The steps are:\n- Normalization (limits taken from OMERO-channel metadata)\n- Gaussian smoothing (gaussian_smoothing_sigma)\n- Laplacian of Gaussian filtering & thresholding at multiple scales (s2_param)\n- Hole filling (fill_2d, fill_max_size)\n- Seeded watershed segmentation, using the local maxima of the smoothed image\n  (gaussian_smoothing_sigma) as seeds.\n"
+    },
+    {
+      "name": "SMO background estimation",
+      "category": "Image Processing",
+      "tags": [
+        "Background",
+        "SMO",
+        "BG",
+        "BG Subtraction",
+        "Background Subtraction"
+      ],
+      "type": "parallel",
+      "executable_parallel": "smo_background_estimation.py",
+      "meta_parallel": {
+        "cpus_per_task": 1,
+        "mem": 4000
+      },
+      "args_schema_parallel": {
+        "additionalProperties": false,
+        "properties": {
+          "zarr_url": {
+            "title": "Zarr Url",
+            "type": "string",
+            "description": "Absolute path to the OME-Zarr image. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "sigma": {
+            "default": 0.0,
+            "title": "Sigma",
+            "type": "number",
+            "description": "Missing description"
+          },
+          "size": {
+            "default": 7,
+            "title": "Size",
+            "type": "integer",
+            "description": "Missing description"
+          },
+          "subtract_background": {
+            "default": false,
+            "title": "Subtract Background",
+            "type": "boolean",
+            "description": "Missing description"
+          },
+          "new_well_sub_group": {
+            "title": "New Well Sub Group",
+            "type": "string",
+            "description": "Name of new well-subgroup. If None, the input image is overwritten. This is only needed if subtract_background is True."
+          }
+        },
+        "required": [
+          "zarr_url"
+        ],
+        "type": "object",
+        "title": "SmoBackgroundEstimation"
+      },
+      "docs_info": "## smo_background_estimation\nEstimates background of each FOV using SMO.\n\nOnly works with 2D data at the moment.\n"
     }
   ],
   "has_args_schemas": true,
