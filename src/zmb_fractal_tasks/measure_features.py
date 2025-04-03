@@ -84,8 +84,8 @@ def measure_features(
     intensity_image = omezarr.get_image(path=level)
 
     # find plate and well names
-    plate_name = Path(zarr_url.split(".zarr/")[0]).name
-    component = zarr_url.split(".zarr/")[1]
+    plate_name = Path(Path(zarr_url).as_posix().split(".zarr/")[0]).name
+    component = Path(zarr_url).as_posix().split(".zarr/")[1]
     well_name = component.split("/")[0] + component.split("/")[1]
 
     logging.info(f"Calculating {output_table_name} for well {well_name}")
