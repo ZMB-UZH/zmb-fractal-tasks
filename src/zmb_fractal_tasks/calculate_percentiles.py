@@ -1,16 +1,12 @@
-"""Fractal task to calculate channel percentiles of entire plate."""
+"""Fractal task to calculate channel percentiles of image."""
 
 from collections.abc import Sequence
 
 import dask.array as da
-
-# import fractal_tasks_core
 import numpy as np
 import zarr
-from ngio import open_omezarr_container
+from ngio import open_ome_zarr_container
 from pydantic import validate_call
-
-# __OME_NGFF_VERSION__ = fractal_tasks_core.__OME_NGFF_VERSION__
 
 
 @validate_call
@@ -35,7 +31,7 @@ def calculate_percentiles(
     if len(percentiles) != 2:
         raise ValueError("Percentiles needs to be of lenth 2")
 
-    omezarr = open_omezarr_container(zarr_url)
+    omezarr = open_ome_zarr_container(zarr_url)
 
     image = omezarr.get_image(path=level)
 
@@ -105,7 +101,7 @@ def get_percentiles(
     return percentile_values
 
 
-# if __name__ == "__main__":
-#     from fractal_tasks_core.tasks._utils import run_fractal_task
+if __name__ == "__main__":
+    from fractal_task_tools.task_wrapper import run_fractal_task
 
-#     run_fractal_task(task_function=calculate_percentiles)
+    run_fractal_task(task_function=calculate_percentiles)

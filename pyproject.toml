@@ -31,8 +31,8 @@ dependencies = [
     "basicpy",
     "cellpose",
     "dask",
-    #"fractal-tasks-core",
-    "ngio == v0.2.0alpha3",
+    "fractal-task-tools",
+    "ngio>=0.2.1",
     "numpy",
     "pandas",
     "pydantic",
@@ -50,7 +50,7 @@ dev = ["devtools", "hatch", "pytest", "requests", "jsonschema", "ruff", "pre-com
 # https://docs.astral.sh/ruff
 [tool.ruff]
 line-length = 88
-target-version = "py39"
+target-version = "py311"
 src = ["src"]
 
 # https://docs.astral.sh/ruff/rules

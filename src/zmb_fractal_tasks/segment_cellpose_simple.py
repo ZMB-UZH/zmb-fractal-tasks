@@ -1,15 +1,11 @@
-"""Segment single channel with cellpose."""
+"""Fractal task to segment single channel with cellpose."""
 
-import json
 from collections.abc import Sequence
-from pathlib import Path
 from typing import Optional
 
 import numpy as np
 from cellpose import models
-
-# import fractal_tasks_core
-from ngio import open_omezarr_container
+from ngio import open_ome_zarr_container
 from pydantic import validate_call
 
 from zmb_fractal_tasks.normalization_utils import (
@@ -17,8 +13,6 @@ from zmb_fractal_tasks.normalization_utils import (
     NormalizedChannelInputModel,
     normalized_image,
 )
-
-# __OME_NGFF_VERSION__ = fractal_tasks_core.__OME_NGFF_VERSION__
 
 
 @validate_call
@@ -75,7 +69,7 @@ def segment_cellpose_simple(
             create more accurate boundaries).
         overwrite: If `True`, overwrite the task output.
     """
-    omezarr = open_omezarr_container(zarr_url)
+    omezarr = open_ome_zarr_container(zarr_url)
     image = omezarr.get_image(path=level)
 
     # TODO: check how to do better
@@ -123,7 +117,7 @@ def segment_cellpose_simple(
             binary = mask > 0
             mask[binary] += max_label
             max_label = mask.max()
-        label_image.set_roi(patch=mask[None,...], roi=roi)
+        label_image.set_roi(patch=mask[None, ...], roi=roi)
 
     # Consolidate the segmentation image
     label_image.consolidate()
@@ -132,16 +126,6 @@ def segment_cellpose_simple(
     # TODO: Add ROI table with bounding boxes of the labels
     if output_ROI_table is not None:
         raise NotImplementedError("ROI table output not implemented yet")
-
-    # TODO: fix label .zattrs (wait for ngio update)
-    # QUICK FIX: Manually adjust the label image .zattrs
-    with open(Path(zarr_url) / "labels" / output_label_name / ".zattrs", "r+") as f:
-        json_data = json.load(f)
-        json_data["image-label"] = json_data.pop("image_label")
-        json_data["multiscales"][0]["name"] = output_label_name
-        f.seek(0)
-        json.dump(json_data, f, indent=4)
-        f.truncate()
 
 
 def segment_ROIs(
@@ -185,7 +169,7 @@ def segment_ROIs(
     return masks
 
 
-# if __name__ == "__main__":
-#     from fractal_tasks_core.tasks._utils import run_fractal_task
+if __name__ == "__main__":
+    from fractal_task_tools.task_wrapper import run_fractal_task
 
-#     run_fractal_task(task_function=segment_particles)
+    run_fractal_task(task_function=segment_cellpose_simple)

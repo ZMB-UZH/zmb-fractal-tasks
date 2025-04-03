@@ -1,18 +1,13 @@
 """Fractal task to estimate background using SMO."""
 
-# import logging
-# from pathlib import Path
 from typing import Optional
 
-# import fractal_tasks_core
 import numpy as np
 import pandas as pd
-from ngio import open_omezarr_container
+from ngio import open_ome_zarr_container
 from ngio.tables import FeatureTable
 from pydantic import validate_call
 from smo import SMO
-
-# __OME_NGFF_VERSION__ = fractal_tasks_core.__OME_NGFF_VERSION__
 
 
 @validate_call
@@ -39,7 +34,7 @@ def smo_background_estimation(
         new_well_sub_group: Name of new well-subgroup. If None, the input image
             is overwritten. This is only needed if subtract_background is True.
     """
-    omezarr = open_omezarr_container(zarr_url)
+    omezarr = open_ome_zarr_container(zarr_url)
     source_image = omezarr.get_image()
     roi_table = omezarr.get_table("FOV_ROI_table", check_type="roi_table")
 
@@ -124,7 +119,7 @@ def subtract_BG(patch: np.ndarray, bg_value: float) -> np.ndarray:
     return new_img.astype(dtype)
 
 
-# if __name__ == "__main__":
-#     from fractal_tasks_core.tasks._utils import run_fractal_task
+if __name__ == "__main__":
+    from fractal_task_tools.task_wrapper import run_fractal_task
 
-#     run_fractal_task(task_function=smo_background_estimation)
+    run_fractal_task(task_function=smo_background_estimation)

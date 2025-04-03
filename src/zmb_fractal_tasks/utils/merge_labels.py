@@ -28,8 +28,8 @@ def merge_labels(
         overwrite: If True, existing labels in the target image are overwritten.
     """
     #TODO: check if origin and target match in size and shape
-    component_origin = zarr_url_origin.split(".zarr/")[1]
-    component_target = zarr_url_target.split(".zarr/")[1]
+    component_origin = Path(zarr_url_origin).as_posix().split(".zarr/")[1]
+    component_target = Path(zarr_url_target).as_posix().split(".zarr/")[1]
 
     # check that components are the same
     if component_origin != component_target:

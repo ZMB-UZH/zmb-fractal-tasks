@@ -1,14 +1,11 @@
-"""Segment spot-like particles."""
+"""Fractal task to segment spot-like particles."""
 
-import json
 from collections.abc import Sequence
-from pathlib import Path
 from typing import Optional
 
-# import fractal_tasks_core
 import numpy as np
 from aicssegmentation.core.utils import hole_filling
-from ngio import open_omezarr_container
+from ngio import open_ome_zarr_container
 from pydantic import validate_call
 from scipy import ndimage
 from skimage.feature import peak_local_max
@@ -20,8 +17,6 @@ from zmb_fractal_tasks.normalization_utils import (
     NormalizedChannelInputModel,
     normalized_image,
 )
-
-# __OME_NGFF_VERSION__ = fractal_tasks_core.__OME_NGFF_VERSION__
 
 
 @validate_call
@@ -91,7 +86,7 @@ def segment_particles(
         fill_max_size: maximum hole-size to be filled (in pixels @ level0)
         overwrite: If `True`, overwrite the task output.
     """
-    omezarr = open_omezarr_container(zarr_url)
+    omezarr = open_ome_zarr_container(zarr_url)
     image = omezarr.get_image(path=level)
 
     roi_table = omezarr.get_table(input_ROI_table, check_type="roi_table")
@@ -137,16 +132,6 @@ def segment_particles(
     # TODO: Add ROI table with bounding boxes of the labels
     if output_ROI_table is not None:
         raise NotImplementedError("ROI table output not implemented yet")
-
-    # TODO: fix label .zattrs (wait for ngio update)
-    # QUICK FIX: Manually adjust the label image .zattrs
-    with open(Path(zarr_url) / "labels" / output_label_name / ".zattrs", "r+") as f:
-        json_data = json.load(f)
-        json_data["image-label"] = json_data.pop("image_label")
-        json_data["multiscales"][0]["name"] = output_label_name
-        f.seek(0)
-        json.dump(json_data, f, indent=4)
-        f.truncate()
 
 
 def gaussian_laplace_threshold(
@@ -288,7 +273,7 @@ def segment_ROI(
     return np.reshape(labels, img.shape)
 
 
-# if __name__ == "__main__":
-#     from fractal_tasks_core.tasks._utils import run_fractal_task
+if __name__ == "__main__":
+    from fractal_task_tools.task_wrapper import run_fractal_task
 
-#     run_fractal_task(task_function=segment_particles)
+    run_fractal_task(task_function=segment_particles)

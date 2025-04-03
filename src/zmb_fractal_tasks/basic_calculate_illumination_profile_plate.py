@@ -8,14 +8,10 @@ from pathlib import Path
 from typing import Optional
 
 import dask.array as da
-
-# import fractal_tasks_core
 import numpy as np
 from basicpy import BaSiC
-from ngio import open_omezarr_container
+from ngio import open_ome_zarr_container
 from pydantic import validate_call
-
-# __OME_NGFF_VERSION__ = fractal_tasks_core.__OME_NGFF_VERSION__
 
 
 @validate_call
@@ -56,7 +52,7 @@ def basic_calculate_illumination_profile_plate(
 
     logging.info(f"Processing {len(zarr_urls)} images")
 
-    omezarrs = [open_omezarr_container(zarr_url) for zarr_url in zarr_urls]
+    omezarrs = [open_ome_zarr_container(zarr_url) for zarr_url in zarr_urls]
     ngio_images = [omezarr.get_image() for omezarr in omezarrs]
 
     # check if all FOVs have the same dimensions
@@ -132,7 +128,7 @@ def basic_calculate_illumination_profile_plate(
         basic_dict[channel] = basic
 
 
-# if __name__ == "__main__":
-#     from fractal_tasks_core.tasks._utils import run_fractal_task
+if __name__ == "__main__":
+    from fractal_task_tools.task_wrapper import run_fractal_task
 
-#     run_fractal_task(task_function=basic_calculate_illumination_profile_plate)
+    run_fractal_task(task_function=basic_calculate_illumination_profile_plate)

@@ -4,12 +4,9 @@ import logging
 from pathlib import Path
 from typing import Optional
 
-# import fractal_tasks_core
 import numpy as np
-from ngio import open_omezarr_container
+from ngio import open_ome_zarr_container
 from pydantic import validate_call
-
-# __OME_NGFF_VERSION__ = fractal_tasks_core.__OME_NGFF_VERSION__
 
 
 @validate_call
@@ -32,7 +29,7 @@ def basic_apply_illumination_profile(
             overwrite_input needs to be False.
             Example: `0_illumination_corrected`.
     """
-    omezarr = open_omezarr_container(zarr_url)
+    omezarr = open_ome_zarr_container(zarr_url)
 
     if new_well_sub_group is not None:
         # TODO: see how to return new image-list
@@ -128,7 +125,7 @@ def correct(
     return new_img.astype(dtype)
 
 
-# if __name__ == "__main__":
-#     from fractal_tasks_core.tasks._utils import run_fractal_task
+if __name__ == "__main__":
+    from fractal_task_tools.task_wrapper import run_fractal_task
 
-#     run_fractal_task(task_function=basic_apply_illumination_profile)
+    run_fractal_task(task_function=basic_apply_illumination_profile)
