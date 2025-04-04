@@ -27,7 +27,6 @@ authors = [
 # Required Python version and dependencies
 requires-python = ">=3.11"
 dependencies = [
-    "aicssegmentation",
     "basicpy",
     "cellpose",
     "dask",
