@@ -1,10 +1,10 @@
 import pytest
 
-from zmb_fractal_tasks.normalization_utils import (
+from zmb_fractal_tasks.segment_cellpose_simple import segment_cellpose_simple
+from zmb_fractal_tasks.utils.normalization import (
     CustomNormalizer,
     NormalizedChannelInputModel,
 )
-from zmb_fractal_tasks.segment_cellpose_simple import segment_cellpose_simple
 
 
 @pytest.mark.parametrize(
