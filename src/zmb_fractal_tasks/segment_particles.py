@@ -65,6 +65,8 @@ def segment_particles(
             fixed rescaling upper and lower bound integers.
             'omero': The "start" and "end" values from the omero channels in
             the zarr file are used for upper and lower bounds.
+            'histogram': A precalculated histogram is used for normalization.
+            Percentiles need to be provided.
         input_ROI_table: Name of the ROI table over which the task loops to
             apply segmentation. Examples: `FOV_ROI_table` => loop over
             the field of views, `organoid_ROI_table` => loop over the organoid
@@ -97,6 +99,9 @@ def segment_particles(
     if channel.normalize.mode == "omero":
         # load normalization from omero channel
         channel.update_normalization_from_omero(zarr_url)
+    if channel.normalize.mode == "histogram":
+        # load normalization from histogram
+        channel.update_normalization_from_histogram(zarr_url)
 
     if output_label_name is None:
         output_label_name = "particles"

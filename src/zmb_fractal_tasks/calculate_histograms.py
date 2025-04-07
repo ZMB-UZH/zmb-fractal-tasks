@@ -46,9 +46,10 @@ def calculate_histograms(
         for roi in roi_table.rois():
             data_da = image.get_roi(roi, c=channel_idx, mode="dask")
             channel_histo.add_histogram(Histogram(data_da, bin_width=bin_width))
-        channel_histos[channel + "_level" + level] = channel_histo
+        channel_histos[channel] = channel_histo
 
     adata = histograms_to_anndata(channel_histos)
+    adata.uns["level"] = level
     generic_table = GenericTable(anndata=adata)
     omezarr.add_table("channel_histograms", generic_table)
 
@@ -60,7 +61,7 @@ def calculate_histograms(
         percentile_values = {}
         for channel in channels:
             percentile_values[channel] = channel_histos[
-                channel + "_level" + level
+                channel
             ].get_quantiles([p / 100 for p in omero_percentiles])
 
         # write omero metadata
