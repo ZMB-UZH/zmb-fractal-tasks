@@ -123,6 +123,63 @@
       "docs_info": "## basic_calculate_illumination_profile_plate\nCalculate illumination profiles for all channels in a plate using BaSiC.\n\nCalculates illumination correction profiles based on a random sample\nof FOVs for each channel.\nNOTE: This assumes that all FOVs in the plate have the same dimensions.\n"
     },
     {
+      "name": "Calculate histograms",
+      "category": "Measurement",
+      "tags": [
+        "Percentiles",
+        "Histogram",
+        "Normalization"
+      ],
+      "type": "parallel",
+      "executable_parallel": "calculate_histograms.py",
+      "meta_parallel": {
+        "cpus_per_task": 1,
+        "mem": 4000
+      },
+      "args_schema_parallel": {
+        "additionalProperties": false,
+        "properties": {
+          "zarr_url": {
+            "title": "Zarr Url",
+            "type": "string",
+            "description": "Absolute path to the OME-Zarr image. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "level": {
+            "default": "0",
+            "title": "Level",
+            "type": "string",
+            "description": "Resolution level to calculate histograms on."
+          },
+          "input_ROI_table": {
+            "default": "FOV_ROI_table",
+            "title": "Input Roi Table",
+            "type": "string",
+            "description": "Name of the ROI table over which the task loops"
+          },
+          "bin_width": {
+            "default": 1,
+            "title": "Bin Width",
+            "type": "number",
+            "description": "Width of the histogram bins. Default is 1."
+          },
+          "omero_percentiles": {
+            "items": {
+              "type": "number"
+            },
+            "title": "Omero Percentiles",
+            "type": "array",
+            "description": "Percentiles to calculate and add to the omero metadata. If None, no percentiles are calculated."
+          }
+        },
+        "required": [
+          "zarr_url"
+        ],
+        "type": "object",
+        "title": "CalculateHistograms"
+      },
+      "docs_info": "## calculate_histograms\nCalculate channel histograms of image.\n"
+    },
+    {
       "name": "Calculate percentiles",
       "category": "Measurement",
       "tags": [

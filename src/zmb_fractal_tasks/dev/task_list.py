@@ -26,6 +26,13 @@ TASK_LIST = [
         tags=["Illumination correction", "BaSiC"],
     ),
     ParallelTask(
+        name="Calculate histograms",
+        executable="calculate_histograms.py",
+        meta={"cpus_per_task": 1, "mem": 4000},
+        category="Measurement",
+        tags=["Percentiles", "Histogram", "Normalization"],
+    ),
+    ParallelTask(
         name="Calculate percentiles",
         executable="calculate_percentiles.py",
         meta={"cpus_per_task": 1, "mem": 4000},

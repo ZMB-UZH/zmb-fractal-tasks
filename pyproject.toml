@@ -27,6 +27,7 @@ authors = [
 # Required Python version and dependencies
 requires-python = ">=3.11"
 dependencies = [
+    "anndata",
     "basicpy",
     "cellpose",
     "dask",
