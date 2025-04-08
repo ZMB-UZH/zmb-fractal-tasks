@@ -22,6 +22,7 @@ from zmb_fractal_tasks.utils.histogram import Histogram, anndata_to_histograms
 
 logger = logging.getLogger(__name__)
 
+# TODO: Add functionality to choose which histogram to use
 
 class CustomNormalizer(BaseModel):
     """Validator to handle different image normalization scenarios.
@@ -34,6 +35,8 @@ class CustomNormalizer(BaseModel):
     bounds can be applied.
     If `mode="omero"`, then the "start" and "end" values from the omero
     channels in the zarr file are used.
+    If `mode="histogram"`, then a precomputed histogram is used to calculate
+    the percentiles for normalization.
 
     Attributes:
         mode: One of `default` (default normalization), `custom`
@@ -52,6 +55,9 @@ class CustomNormalizer(BaseModel):
         upper_bound: Explicit upper bound value to rescale the image at.
             Needs to be an integer, e.g. 2000.
             You can only specify percentiles or bounds, not both.
+        histogram_name: Name of the histogram to use for rescaling in
+            `histogram` mode.
+            Needs to be a string, e.g. "channel_histograms".
     """
 
     mode: Literal["default", "custom", "omero", "histogram", "no_normalization"] = (
@@ -61,10 +67,9 @@ class CustomNormalizer(BaseModel):
     upper_percentile: Optional[float] = Field(None, ge=0, le=100)
     lower_bound: Optional[int] = None
     upper_bound: Optional[int] = None
+    histogram_name: Optional[str] = None
 
-    # In the future, add an option to allow using precomputed percentiles
-    # that are stored in OME-Zarr histograms and use this pydantic model that
-    # those histograms actually exist
+    # TODO: use this pydantic model to check that histograms actually exist
 
     @model_validator(mode="after")
     def validate_conditions(self: Self) -> Self:
@@ -75,6 +80,7 @@ class CustomNormalizer(BaseModel):
         upper_percentile = self.upper_percentile
         lower_bound = self.lower_bound
         upper_bound = self.upper_bound
+        histogram_name = self.histogram_name
 
         # Verify that percentiles are only provided with "custom" or "histogram" mode
         if mode not in ["custom", "histogram"]:
@@ -98,6 +104,8 @@ class CustomNormalizer(BaseModel):
                 raise ValueError(
                     f"Mode='{mode}' but {upper_bound=}. Hint: set mode='custom'."
                 )
+        if mode == "histogram" and histogram_name is None:
+            histogram_name = "channel_histograms"
 
         # The only valid options are:
         # 1. Both percentiles are set and both bounds are unset
@@ -163,11 +171,11 @@ class NormalizedChannelInputModel(ChannelInputModel):
             )
             return None
 
-    def get_histogram(self, zarr_url) -> Histogram:
+    def get_histogram(self, zarr_url, histogram_name) -> Histogram:
         """Get histogram from zarr file"""
         try:
             omezarr = open_ome_zarr_container(zarr_url)
-            channel_histograms = omezarr.get_table("channel_histograms")
+            channel_histograms = omezarr.get_table(histogram_name)
             adata = channel_histograms.anndata
             histogram_dict = anndata_to_histograms(adata)
             histogram = histogram_dict[self.label]
@@ -191,7 +199,7 @@ class NormalizedChannelInputModel(ChannelInputModel):
     def update_normalization_from_histogram(self, zarr_url) -> None:
         """Load histogram and update the normalization parameters."""
         if self.normalize.mode == "histogram":
-            histogram = self.get_histogram(zarr_url)
+            histogram = self.get_histogram(zarr_url, self.normalize.histogram_name)
             if histogram is None:
                 raise ValueError("Mode='histogram' but histogram is not found.")
             percentile_values = histogram.get_quantiles(

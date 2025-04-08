@@ -79,7 +79,7 @@ def aggregate_plate_histograms(
         generic_table = GenericTable(anndata=adata)
         for zarr_url in plate_zarr_urls:
             omezarr = open_ome_zarr_container(zarr_url)
-            omezarr.add_table("channel_histograms_plate", generic_table)
+            omezarr.add_table(histogram_input_name+"_plate", generic_table)
 
         # calculate percentiles & write omero metadata
         if omero_percentiles is not None:

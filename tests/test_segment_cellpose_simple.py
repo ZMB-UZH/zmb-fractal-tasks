@@ -1,5 +1,6 @@
 import pytest
 
+from zmb_fractal_tasks.aggregate_plate_histograms import aggregate_plate_histograms
 from zmb_fractal_tasks.calculate_histograms import calculate_histograms
 from zmb_fractal_tasks.segment_cellpose_simple import segment_cellpose_simple
 from zmb_fractal_tasks.utils.normalization import (
@@ -21,6 +22,11 @@ def test_segment_cellpose_simple(temp_dir, zarr_name):
         level="2",
         omero_percentiles=[1, 99],
     )
+    aggregate_plate_histograms(
+        zarr_urls=[str(temp_dir / zarr_name / "B" / "03" / "0")],
+        zarr_dir=str(temp_dir / zarr_name),
+        omero_percentiles=[1, 99],
+    )
     segment_cellpose_simple(
         zarr_url=str(temp_dir / zarr_name / "B" / "03" / "0"),
         level="2",
@@ -30,6 +36,7 @@ def test_segment_cellpose_simple(temp_dir, zarr_name):
                 mode="histogram",
                 lower_percentile=1,
                 upper_percentile=99,
+                histogram_name="channel_histograms_plate",
             ),
         ),
         diameter=60.0,
