@@ -64,6 +64,7 @@ class Histogram:
                 first_bin_no2 + len(frequencies2) - 1,
             ]
         )
+        # TODO: check for overflow?
         if isinstance(frequencies1, da.core.Array) or isinstance(
             frequencies2, da.core.Array
         ):
