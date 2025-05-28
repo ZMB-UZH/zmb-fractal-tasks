@@ -1,5 +1,3 @@
-import pytest
-
 from zmb_fractal_tasks.aggregate_plate_histograms import aggregate_plate_histograms
 from zmb_fractal_tasks.calculate_histograms import calculate_histograms
 from zmb_fractal_tasks.segment_cellpose_simple import segment_cellpose_simple
@@ -9,26 +7,19 @@ from zmb_fractal_tasks.utils.normalization import (
 )
 
 
-@pytest.mark.parametrize(
-    "zarr_name",
-    [
-        # "20200812-CardiomyocyteDifferentiation14-Cycle1.zarr",
-        "20200812-CardiomyocyteDifferentiation14-Cycle1_mip.zarr",
-    ],
-)
-def test_segment_cellpose_simple(temp_dir, zarr_name):
+def test_segment_cellpose_simple(zarr_MIP_path):
     calculate_histograms(
-        zarr_url=str(temp_dir / zarr_name / "B" / "03" / "0"),
+        zarr_url=str(zarr_MIP_path / "B" / "03" / "0"),
         level="2",
         omero_percentiles=[1, 99],
     )
     aggregate_plate_histograms(
-        zarr_urls=[str(temp_dir / zarr_name / "B" / "03" / "0")],
-        zarr_dir=str(temp_dir / zarr_name),
+        zarr_urls=[str(zarr_MIP_path / "B" / "03" / "0")],
+        zarr_dir=str(zarr_MIP_path),
         omero_percentiles=[1, 99],
     )
     segment_cellpose_simple(
-        zarr_url=str(temp_dir / zarr_name / "B" / "03" / "0"),
+        zarr_url=str(zarr_MIP_path / "B" / "03" / "0"),
         level="2",
         channel=NormalizedChannelInputModel(
             label="DAPI",
