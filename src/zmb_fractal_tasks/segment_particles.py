@@ -1,6 +1,7 @@
 """Fractal task to segment spot-like particles."""
 
 from collections.abc import Sequence
+from typing import Optional
 
 import numpy as np
 from ngio import open_ome_zarr_container
@@ -27,10 +28,10 @@ def segment_particles(
     level: str = "0",
     channel: NormalizedChannelInputModel,
     input_ROI_table: str = "FOV_ROI_table",
-    output_ROI_table: str | None = None,
-    output_label_name: str | None = None,
+    output_ROI_table: Optional[str] = None,
+    output_label_name: Optional[str] = None,
     # Segmentation parameters
-    gaussian_smoothing_sigma: float | None = None,
+    gaussian_smoothing_sigma: Optional[float] = None,
     s2_param: Sequence[Sequence[float]] = [
         [1, 0.04],
     ],

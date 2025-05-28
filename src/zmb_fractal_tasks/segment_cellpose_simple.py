@@ -1,6 +1,7 @@
 """Fractal task to segment single channel with cellpose."""
 
 from collections.abc import Sequence
+from typing import Optional
 
 import numpy as np
 from cellpose import models
@@ -23,8 +24,8 @@ def segment_cellpose_simple(
     level: str = "0",
     channel: NormalizedChannelInputModel,
     input_ROI_table: str = "FOV_ROI_table",
-    output_ROI_table: str | None = None,
-    output_label_name: str | None = None,
+    output_ROI_table: Optional[str] = None,
+    output_label_name: Optional[str] = None,
     # Segmentation parameters
     gpu: bool = False,
     model_type: str = "nuclei",
@@ -116,7 +117,7 @@ def segment_cellpose_simple(
     )
     # save segmentations
     max_label = 0
-    for roi, mask in zip(roi_table.rois(), masks, strict=False):
+    for roi, mask in zip(roi_table.rois(), masks):
         if mask.max() > 0:
             binary = mask > 0
             mask[binary] += max_label
