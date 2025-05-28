@@ -1,11 +1,15 @@
 import json
 import subprocess
+import sys
 from shlex import split as shlex_split
 
 import pytest
 from devtools import debug
 
 from . import MANIFEST, PACKAGE_DIR
+
+if sys.platform.startswith("win"):
+    pytest.skip("Skipping on Windows", allow_module_level=True)
 
 
 def validate_command(cmd: str):

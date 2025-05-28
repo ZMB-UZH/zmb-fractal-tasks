@@ -4,15 +4,15 @@ from collections.abc import Sequence
 from typing import Optional
 
 import numpy as np
-from aicssegmentation.core.utils import hole_filling
 from ngio import open_ome_zarr_container
 from pydantic import validate_call
 from scipy import ndimage
 from skimage.feature import peak_local_max
 from skimage.filters import gaussian
+from skimage.morphology import remove_small_holes
 from skimage.segmentation import watershed
 
-from zmb_fractal_tasks.normalization_utils import (
+from zmb_fractal_tasks.utils.normalization import (
     CustomNormalizer,
     NormalizedChannelInputModel,
     normalized_image,
@@ -65,6 +65,8 @@ def segment_particles(
             fixed rescaling upper and lower bound integers.
             'omero': The "start" and "end" values from the omero channels in
             the zarr file are used for upper and lower bounds.
+            'histogram': A precalculated histogram is used for normalization.
+            Percentiles need to be provided.
         input_ROI_table: Name of the ROI table over which the task loops to
             apply segmentation. Examples: `FOV_ROI_table` => loop over
             the field of views, `organoid_ROI_table` => loop over the organoid
@@ -97,13 +99,15 @@ def segment_particles(
     if channel.normalize.mode == "omero":
         # load normalization from omero channel
         channel.update_normalization_from_omero(zarr_url)
+    if channel.normalize.mode == "histogram":
+        # load normalization from histogram
+        channel.update_normalization_from_histogram(zarr_url)
 
     if output_label_name is None:
         output_label_name = "particles"
 
-    label_image = omezarr.derive_label(
-        name=output_label_name, overwrite=overwrite, ref_image=image, dtype="uint32"
-    )
+    omezarr.derive_label(name=output_label_name, overwrite=overwrite)
+    label_image = omezarr.get_label(name=output_label_name, path=level)
 
     max_label = 0
     for roi in roi_table.rois():
@@ -185,7 +189,7 @@ def spot_mask_2D(
     if gaussian_smoothing_sigma:
         x = gaussian(x, sigma=gaussian_smoothing_sigma, preserve_range=True)
     mask = gaussian_laplace_threshold(x, s2_param)
-    mask = hole_filling(mask, 0, fill_max_size, fill_2d)
+    mask = remove_small_holes(mask, fill_max_size)
     return mask
 
 
@@ -199,9 +203,14 @@ def separate_watershed(img, mask, sigma):
     """
     # TODO: There are inconsistencies with the watershed algorithm, if there is
     # anisotropy in xy and z
-    img_processed = gaussian(img, sigma=sigma)
+    if sigma:
+        img_processed = gaussian(img, sigma=sigma)
+        min_distance = sigma
+    else:
+        img_processed = img
+        min_distance = 1
     coords = peak_local_max(
-        img_processed, labels=mask, min_distance=sigma, exclude_border=False
+        img_processed, labels=mask, min_distance=min_distance, exclude_border=False
     )
     maximas = np.zeros(img.shape, dtype=bool)
     maximas[tuple(coords.T)] = True
@@ -269,7 +278,7 @@ def segment_ROI(
             fill_2d,
             fill_max_size,
         )
-    labels = separate_watershed(img_zyx, mask, 1)
+    labels = separate_watershed(img_zyx, mask, gaussian_smoothing_sigma)
     return np.reshape(labels, img.shape)
 
 

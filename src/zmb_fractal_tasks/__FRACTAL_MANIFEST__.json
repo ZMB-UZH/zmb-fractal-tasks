@@ -2,6 +2,60 @@
   "manifest_version": "2",
   "task_list": [
     {
+      "name": "Aggregate all channel histograms for plate",
+      "category": "Measurement",
+      "tags": [
+        "Percentiles",
+        "Histogram",
+        "Normalization"
+      ],
+      "type": "non_parallel",
+      "executable_non_parallel": "aggregate_plate_histograms.py",
+      "meta_non_parallel": {
+        "cpus_per_task": 1,
+        "mem": 4000
+      },
+      "args_schema_non_parallel": {
+        "additionalProperties": false,
+        "properties": {
+          "zarr_urls": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Zarr Urls",
+            "type": "array",
+            "description": "List of paths or urls to the individual OME-Zarr images to be processed. (Standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "zarr_dir": {
+            "title": "Zarr Dir",
+            "type": "string",
+            "description": "Not used for this task. (Standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "histogram_input_name": {
+            "default": "channel_histograms",
+            "title": "Histogram Input Name",
+            "type": "string",
+            "description": "Table name of the histogram table to be combined."
+          },
+          "omero_percentiles": {
+            "items": {
+              "type": "number"
+            },
+            "title": "Omero Percentiles",
+            "type": "array",
+            "description": "Percentiles to calculate from the combine histogram and add to the omero metadata. If None, no percentiles are calculated."
+          }
+        },
+        "required": [
+          "zarr_urls",
+          "zarr_dir"
+        ],
+        "type": "object",
+        "title": "AggregatePlateHistograms"
+      },
+      "docs_info": "## aggregate_plate_histograms\nFind all channel histograms in a plate and combine them.\n\nIn each image, a new table is created with the combined histograms.\n"
+    },
+    {
       "name": "BaSiC: Apply illumination profile",
       "category": "Image Processing",
       "tags": [
@@ -121,6 +175,69 @@
         "title": "BasicCalculateIlluminationProfilePlate"
       },
       "docs_info": "## basic_calculate_illumination_profile_plate\nCalculate illumination profiles for all channels in a plate using BaSiC.\n\nCalculates illumination correction profiles based on a random sample\nof FOVs for each channel.\nNOTE: This assumes that all FOVs in the plate have the same dimensions.\n"
+    },
+    {
+      "name": "Calculate channel-histograms for each image",
+      "category": "Measurement",
+      "tags": [
+        "Percentiles",
+        "Histogram",
+        "Normalization"
+      ],
+      "type": "parallel",
+      "executable_parallel": "calculate_histograms.py",
+      "meta_parallel": {
+        "cpus_per_task": 1,
+        "mem": 4000
+      },
+      "args_schema_parallel": {
+        "additionalProperties": false,
+        "properties": {
+          "zarr_url": {
+            "title": "Zarr Url",
+            "type": "string",
+            "description": "Absolute path to the OME-Zarr image. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "level": {
+            "default": "0",
+            "title": "Level",
+            "type": "string",
+            "description": "Resolution level to calculate histograms on."
+          },
+          "input_ROI_table": {
+            "default": "FOV_ROI_table",
+            "title": "Input Roi Table",
+            "type": "string",
+            "description": "Name of the ROI table over which the task loops"
+          },
+          "bin_width": {
+            "default": 1,
+            "title": "Bin Width",
+            "type": "number",
+            "description": "Width of the histogram bins. Default is 1."
+          },
+          "omero_percentiles": {
+            "items": {
+              "type": "number"
+            },
+            "title": "Omero Percentiles",
+            "type": "array",
+            "description": "Percentiles to calculate and add to the omero metadata. If None, no percentiles are calculated."
+          },
+          "histogram_name": {
+            "default": "channel_histograms",
+            "title": "Histogram Name",
+            "type": "string",
+            "description": "Missing description"
+          }
+        },
+        "required": [
+          "zarr_url"
+        ],
+        "type": "object",
+        "title": "CalculateHistograms"
+      },
+      "docs_info": "## calculate_histograms\nCalculate channel histograms of image.\n"
     },
     {
       "name": "Calculate percentiles",
@@ -388,20 +505,21 @@
                   "default",
                   "custom",
                   "omero",
+                  "histogram",
                   "no_normalization"
                 ],
                 "title": "Mode",
                 "type": "string"
               },
               "lower_percentile": {
-                "maximum": 100.0,
-                "minimum": 0.0,
+                "maximum": 100,
+                "minimum": 0,
                 "title": "Lower Percentile",
                 "type": "number"
               },
               "upper_percentile": {
-                "maximum": 100.0,
-                "minimum": 0.0,
+                "maximum": 100,
+                "minimum": 0,
                 "title": "Upper Percentile",
                 "type": "number"
               },
@@ -412,6 +530,11 @@
               "upper_bound": {
                 "title": "Upper Bound",
                 "type": "integer"
+              },
+              "histogram_name": {
+                "default": "channel_histograms",
+                "title": "Histogram Name",
+                "type": "string"
               }
             },
             "title": "CustomNormalizer",
@@ -453,7 +576,7 @@
           "channel": {
             "$ref": "#/$defs/NormalizedChannelInputModel",
             "title": "Channel",
-            "description": "Channel for segmentation; requires either `wavelength_id` (e.g. `A01_C01`) or `label` (e.g. `DAPI`), but not both. Also contains normalization options: 'default': Data is normalized so 0.0=1st percentile and 1.0=99th percentile of image intensities. 'no_normalization': No normalization is applied. 'custom': You can either provide your own rescaling percentiles or fixed rescaling upper and lower bound integers. 'omero': The \"start\" and \"end\" values from the omero channels in the zarr file are used for upper and lower bounds."
+            "description": "Channel for segmentation; requires either `wavelength_id` (e.g. `A01_C01`) or `label` (e.g. `DAPI`), but not both. Also contains normalization options: 'default': Data is normalized so 0.0=1st percentile and 1.0=99th percentile of image intensities. 'no_normalization': No normalization is applied. 'custom': You can either provide your own rescaling percentiles or fixed rescaling upper and lower bound integers. 'omero': The \"start\" and \"end\" values from the omero channels in the zarr file are used for upper and lower bounds. 'histogram': A precalculated histogram is used for normalization. Percentiles need to be provided."
           },
           "input_ROI_table": {
             "default": "FOV_ROI_table",
@@ -543,20 +666,21 @@
                   "default",
                   "custom",
                   "omero",
+                  "histogram",
                   "no_normalization"
                 ],
                 "title": "Mode",
                 "type": "string"
               },
               "lower_percentile": {
-                "maximum": 100.0,
-                "minimum": 0.0,
+                "maximum": 100,
+                "minimum": 0,
                 "title": "Lower Percentile",
                 "type": "number"
               },
               "upper_percentile": {
-                "maximum": 100.0,
-                "minimum": 0.0,
+                "maximum": 100,
+                "minimum": 0,
                 "title": "Upper Percentile",
                 "type": "number"
               },
@@ -567,6 +691,11 @@
               "upper_bound": {
                 "title": "Upper Bound",
                 "type": "integer"
+              },
+              "histogram_name": {
+                "default": "channel_histograms",
+                "title": "Histogram Name",
+                "type": "string"
               }
             },
             "title": "CustomNormalizer",
@@ -608,7 +737,7 @@
           "channel": {
             "$ref": "#/$defs/NormalizedChannelInputModel",
             "title": "Channel",
-            "description": "Channel for segmentation; requires either `wavelength_id` (e.g. `A01_C01`) or `label` (e.g. `DAPI`), but not both. Also contains normalization options: 'default': Data is normalized so 0.0=1st percentile and 1.0=99th percentile of image intensities. 'no_normalization': No normalization is applied. 'custom': You can either provide your own rescaling percentiles or fixed rescaling upper and lower bound integers. 'omero': The \"start\" and \"end\" values from the omero channels in the zarr file are used for upper and lower bounds."
+            "description": "Channel for segmentation; requires either `wavelength_id` (e.g. `A01_C01`) or `label` (e.g. `DAPI`), but not both. Also contains normalization options: 'default': Data is normalized so 0.0=1st percentile and 1.0=99th percentile of image intensities. 'no_normalization': No normalization is applied. 'custom': You can either provide your own rescaling percentiles or fixed rescaling upper and lower bound integers. 'omero': The \"start\" and \"end\" values from the omero channels in the zarr file are used for upper and lower bounds. 'histogram': A precalculated histogram is used for normalization. Percentiles need to be provided."
           },
           "input_ROI_table": {
             "default": "FOV_ROI_table",

@@ -10,6 +10,13 @@ DOCS_LINK = None
 INPUT_MODELS = []
 
 TASK_LIST = [
+    NonParallelTask(
+        name="Aggregate all channel histograms for plate",
+        executable="aggregate_plate_histograms.py",
+        meta={"cpus_per_task": 1, "mem": 4000},
+        category="Measurement",
+        tags=["Percentiles", "Histogram", "Normalization"],
+    ),
     ParallelTask(
         name="BaSiC: Apply illumination profile",
         executable="basic_apply_illumination_profile.py",
@@ -24,6 +31,13 @@ TASK_LIST = [
         meta={"cpus_per_task": 1, "mem": 4000},
         category="Image Processing",
         tags=["Illumination correction", "BaSiC"],
+    ),
+    ParallelTask(
+        name="Calculate channel-histograms for each image",
+        executable="calculate_histograms.py",
+        meta={"cpus_per_task": 1, "mem": 4000},
+        category="Measurement",
+        tags=["Percentiles", "Histogram", "Normalization"],
     ),
     ParallelTask(
         name="Calculate percentiles",

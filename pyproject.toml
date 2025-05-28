@@ -27,12 +27,12 @@ authors = [
 # Required Python version and dependencies
 requires-python = ">=3.11"
 dependencies = [
-    "aicssegmentation",
+    "anndata",
     "basicpy",
-    "cellpose",
+    "cellpose>=3.0.0,<4.0.0",
     "dask",
     "fractal-task-tools",
-    "ngio>=0.2.1",
+    "ngio>=0.2.8,<0.3.0",
     "numpy",
     "pandas",
     "pydantic",
@@ -45,7 +45,17 @@ dependencies = [
 # Optional dependencies (e.g. for `pip install -e ".[dev]"`, see
 # https://peps.python.org/pep-0621/#dependencies-optional-dependencies)
 [project.optional-dependencies]
-dev = ["devtools", "hatch", "pytest", "requests", "jsonschema", "ruff", "pre-commit"]
+dev = [
+    "devtools",
+    "hatch",
+    "ipykernel",
+    "jsonschema",
+    "pre-commit",
+    "pytest",
+    "pytest-cov",
+    "requests",
+    "ruff",
+]
 
 # https://docs.astral.sh/ruff
 [tool.ruff]

@@ -8,7 +8,7 @@ from cellpose import models
 from ngio import open_ome_zarr_container
 from pydantic import validate_call
 
-from zmb_fractal_tasks.normalization_utils import (
+from zmb_fractal_tasks.utils.normalization import (
     CustomNormalizer,
     NormalizedChannelInputModel,
     normalized_image,
@@ -52,6 +52,8 @@ def segment_cellpose_simple(
             fixed rescaling upper and lower bound integers.
             'omero': The "start" and "end" values from the omero channels in
             the zarr file are used for upper and lower bounds.
+            'histogram': A precalculated histogram is used for normalization.
+            Percentiles need to be provided.
         input_ROI_table: Name of the ROI table over which the task loops to
             apply segmentation. Examples: `FOV_ROI_table` => loop over
             the field of views, `organoid_ROI_table` => loop over the organoid
@@ -72,9 +74,10 @@ def segment_cellpose_simple(
     omezarr = open_ome_zarr_container(zarr_url)
     image = omezarr.get_image(path=level)
 
-    # TODO: check how to do better
-    if image.shape[1] > 1:
+    if image.is_3d:
         raise ValueError("Only 2D images are supported")
+    if image.is_time_series:
+        raise ValueError("Time series are not supported")
 
     roi_table = omezarr.get_table(input_ROI_table, check_type="roi_table")
 
@@ -87,13 +90,15 @@ def segment_cellpose_simple(
     if channel.normalize.mode == "omero":
         # load normalization from omero channel
         channel.update_normalization_from_omero(zarr_url)
+    if channel.normalize.mode == "histogram":
+        # load normalization from histogram
+        channel.update_normalization_from_histogram(zarr_url)
 
     if output_label_name is None:
         output_label_name = "cellpose"
 
-    label_image = omezarr.derive_label(
-        name=output_label_name, overwrite=overwrite, ref_image=image
-    )
+    omezarr.derive_label(name=output_label_name, overwrite=overwrite)
+    label_image = omezarr.get_label(name=output_label_name, path=level)
 
     # load data
     cellpose_patches = []
@@ -121,7 +126,6 @@ def segment_cellpose_simple(
 
     # Consolidate the segmentation image
     label_image.consolidate()
-    # TODO: Fix consolidation at higher levels (wait for ngio?)
 
     # TODO: Add ROI table with bounding boxes of the labels
     if output_ROI_table is not None:
