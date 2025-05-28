@@ -1,7 +1,6 @@
 """Fractal task to segment spot-like particles."""
 
 from collections.abc import Sequence
-from typing import Optional
 
 import numpy as np
 from ngio import open_ome_zarr_container
@@ -28,10 +27,10 @@ def segment_particles(
     level: str = "0",
     channel: NormalizedChannelInputModel,
     input_ROI_table: str = "FOV_ROI_table",
-    output_ROI_table: Optional[str] = None,
-    output_label_name: Optional[str] = None,
+    output_ROI_table: str | None = None,
+    output_label_name: str | None = None,
     # Segmentation parameters
-    gaussian_smoothing_sigma: Optional[float] = None,
+    gaussian_smoothing_sigma: float | None = None,
     s2_param: Sequence[Sequence[float]] = [
         [1, 0.04],
     ],
@@ -106,9 +105,8 @@ def segment_particles(
     if output_label_name is None:
         output_label_name = "particles"
 
-    label_image = omezarr.derive_label(
-        name=output_label_name, overwrite=overwrite, ref_image=image, dtype="uint32"
-    )
+    omezarr.derive_label(name=output_label_name, overwrite=overwrite)
+    label_image = omezarr.get_label(name=output_label_name, path=level)
 
     max_label = 0
     for roi in roi_table.rois():

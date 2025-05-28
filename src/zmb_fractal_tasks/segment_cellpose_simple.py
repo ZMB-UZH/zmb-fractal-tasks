@@ -1,7 +1,6 @@
 """Fractal task to segment single channel with cellpose."""
 
 from collections.abc import Sequence
-from typing import Optional
 
 import numpy as np
 from cellpose import models
@@ -24,8 +23,8 @@ def segment_cellpose_simple(
     level: str = "0",
     channel: NormalizedChannelInputModel,
     input_ROI_table: str = "FOV_ROI_table",
-    output_ROI_table: Optional[str] = None,
-    output_label_name: Optional[str] = None,
+    output_ROI_table: str | None = None,
+    output_label_name: str | None = None,
     # Segmentation parameters
     gpu: bool = False,
     model_type: str = "nuclei",
@@ -74,9 +73,10 @@ def segment_cellpose_simple(
     omezarr = open_ome_zarr_container(zarr_url)
     image = omezarr.get_image(path=level)
 
-    # TODO: check how to do better
-    if image.shape[1] > 1:
+    if image.is_3d:
         raise ValueError("Only 2D images are supported")
+    if image.is_time_series:
+        raise ValueError("Time series are not supported")
 
     roi_table = omezarr.get_table(input_ROI_table, check_type="roi_table")
 
@@ -96,9 +96,8 @@ def segment_cellpose_simple(
     if output_label_name is None:
         output_label_name = "cellpose"
 
-    label_image = omezarr.derive_label(
-        name=output_label_name, overwrite=overwrite, ref_image=image
-    )
+    omezarr.derive_label(name=output_label_name, overwrite=overwrite)
+    label_image = omezarr.get_label(name=output_label_name, path=level)
 
     # load data
     cellpose_patches = []
@@ -117,7 +116,7 @@ def segment_cellpose_simple(
     )
     # save segmentations
     max_label = 0
-    for roi, mask in zip(roi_table.rois(), masks):
+    for roi, mask in zip(roi_table.rois(), masks, strict=False):
         if mask.max() > 0:
             binary = mask > 0
             mask[binary] += max_label
@@ -126,7 +125,6 @@ def segment_cellpose_simple(
 
     # Consolidate the segmentation image
     label_image.consolidate()
-    # TODO: Fix consolidation at higher levels (wait for ngio?)
 
     # TODO: Add ROI table with bounding boxes of the labels
     if output_ROI_table is not None:
