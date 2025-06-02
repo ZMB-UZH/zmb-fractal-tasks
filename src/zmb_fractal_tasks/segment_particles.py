@@ -106,7 +106,9 @@ def segment_particles(
     if output_label_name is None:
         output_label_name = "particles"
 
-    omezarr.derive_label(name=output_label_name, overwrite=overwrite)
+    omezarr.derive_label(
+        name=output_label_name, overwrite=overwrite, dtype='uint32'
+    ) # TODO: maybe expose dtype, or figure out how to set dynamically as needed
     label_image = omezarr.get_label(name=output_label_name, path=level)
 
     max_label = 0
