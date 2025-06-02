@@ -175,7 +175,7 @@ class NormalizedChannelInputModel(ChannelInputModel):
             channel_histograms = omezarr.get_table(histogram_name)
             adata = channel_histograms.anndata
             histogram_dict = anndata_to_histograms(adata)
-            histogram = histogram_dict[self.label]
+            histogram = histogram_dict[self.get_omero_channel(zarr_url).label]
             return histogram
         except Exception as e:
             logger.error(f"An error occurred while getting the histogram: {e}")
