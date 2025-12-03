@@ -1,6 +1,7 @@
 """Fractal task to estimate background using SMO."""
 
-from typing import Optional
+from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -17,8 +18,9 @@ def smo_background_estimation(
     sigma: float = 0.0,
     size: int = 7,
     subtract_background: bool = False,
-    new_well_sub_group: Optional[str] = None,
-) -> dict:
+    create_new_well_sub_group: bool = False,
+    new_well_sub_group_suffix: str = "BG_subtracted",
+) -> dict[str, Any]:
     """Estimates background of each FOV using SMO.
 
     Only works with 2D data at the moment.
@@ -26,13 +28,15 @@ def smo_background_estimation(
     Args:
         zarr_url: Absolute path to the OME-Zarr image.
             (standard argument for Fractal tasks, managed by Fractal server).
-        sigma : Standard deviation for Gaussian kernel of pre-filter.
-        size : Averaging window size in pixels. Should be smaller than
+        sigma: Standard deviation for Gaussian kernel of pre-filter.
+        size: Averaging window size in pixels. Should be smaller than
             foreground objects.
-        subtract_background : If True, subtract the estimated background from
+        subtract_background: If True, subtract the estimated background from
             the image (clipping at zero).
-        new_well_sub_group: Name of new well-subgroup. If None, the input image
-            is overwritten. This is only needed if subtract_background is True.
+        create_new_well_sub_group: Whether to create a new well sub-group
+            in the OME-Zarr to store the corrected images.
+        new_well_sub_group_suffix: Suffix to add to the new well sub-group
+            name, if `create_new_well_sub_group` is True.
     """
     omezarr = open_ome_zarr_container(zarr_url)
     source_image = omezarr.get_image()
@@ -59,15 +63,15 @@ def smo_background_estimation(
     # Apply BG subtraction
     if subtract_background:
         # open new ome-zarr
-        if new_well_sub_group is not None:
-            # TODO: see how to return new image-list
-            raise ValueError("new_well_sub_group is not implemented yet.")
-            # new_zarr_url = Path(zarr_url).parent / new_well_sub_group
-            # output_omezarr = omezarr.derive_image(new_zarr_url, overwrite=True)
-            # # copy all tables
-            # for table_name in omezarr.list_tables():
-            #     output_omezarr.add_table(table_name, omezarr.get_table(table_name))
-            # # TODO: copy all labels?
+        if create_new_well_sub_group:
+            new_zarr_url = Path(zarr_url).parent / (
+                Path(zarr_url).stem + "_" + new_well_sub_group_suffix
+            )
+            output_omezarr = omezarr.derive_image(new_zarr_url, overwrite=True)
+            # copy all tables
+            for table_name in omezarr.list_tables():
+                output_omezarr.add_table(table_name, omezarr.get_table(table_name))
+            # TODO: copy all labels? -> how best?
         else:
             output_omezarr = omezarr
         output_image = output_omezarr.get_image()
@@ -82,6 +86,17 @@ def smo_background_estimation(
                 output_image.set_roi(patch=patch_corrected, roi=roi, c=channel_idx)
 
         output_image.consolidate()
+
+        if create_new_well_sub_group:
+            image_list_updates = {
+                "image_list_updates": [{"zarr_url": new_zarr_url, "origin": zarr_url}]
+            }
+        else:
+            image_list_updates = {"image_list_updates": [{"zarr_url": zarr_url}]}
+    else:
+        image_list_updates = {}
+
+    return image_list_updates
 
 
 def estimate_BG_smo(patch: np.ndarray, sigma: float, size: int) -> float:

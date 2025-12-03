@@ -21,6 +21,7 @@ def test_basic_apply_illumination_profile(tmpdir, zarr_path):
         zarr_url=str(zarr_path / "B" / "03" / "0"),
         illumination_profiles_folder=str(tmpdir / "illumination_profiles"),
         subtract_median_baseline=False,
-        new_well_sub_group=None,
+        create_new_well_sub_group=True,
+        new_well_sub_group_suffix="illumination_corrected",
     )
     # TODO: Check outputs

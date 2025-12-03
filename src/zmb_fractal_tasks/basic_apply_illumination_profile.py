@@ -2,7 +2,7 @@
 
 import logging
 from pathlib import Path
-from typing import Optional
+from typing import Any
 
 import numpy as np
 from ngio import open_ome_zarr_container
@@ -15,8 +15,9 @@ def basic_apply_illumination_profile(
     zarr_url: str,
     illumination_profiles_folder: str,
     subtract_median_baseline: bool = False,
-    new_well_sub_group: Optional[str] = None,
-) -> dict:
+    create_new_well_sub_group: bool = False,
+    new_well_sub_group_suffix: str = "illumination_corrected",
+) -> dict[str, Any]:
     """Applies illumination correction to the OME-Zarr.
 
     Args:
@@ -25,21 +26,22 @@ def basic_apply_illumination_profile(
         illumination_profiles_folder: Path of folder of illumination profiles.
         subtract_median_baseline: If True, subtract the median of all baseline
             values from the corrected image.
-        new_well_sub_group: Name of new well-subgroup. If this is set,
-            overwrite_input needs to be False.
-            Example: `0_illumination_corrected`.
+        create_new_well_sub_group: Whether to create a new well sub-group
+            in the OME-Zarr to store the corrected images.
+        new_well_sub_group_suffix: Suffix to add to the new well sub-group
+            name, if `create_new_well_sub_group` is True.
     """
     omezarr = open_ome_zarr_container(zarr_url)
 
-    if new_well_sub_group is not None:
-        # TODO: see how to return new image-list
-        raise ValueError("new_well_sub_group is not implemented yet.")
-        # new_zarr_url = Path(zarr_url).parent / new_well_sub_group
-        # output_omezarr = omezarr.derive_image(new_zarr_url, overwrite=True)
-        # # copy all tables
-        # for table_name in omezarr.list_tables():
-        #     output_omezarr.add_table(table_name, omezarr.get_table(table_name))
-        # # TODO: copy all labels?
+    if create_new_well_sub_group:
+        new_zarr_url = Path(zarr_url).parent / (
+            Path(zarr_url).stem + "_" + new_well_sub_group_suffix
+        )
+        output_omezarr = omezarr.derive_image(new_zarr_url, overwrite=True)
+        # copy all tables
+        for table_name in omezarr.list_tables():
+            output_omezarr.add_table(table_name, omezarr.get_table(table_name))
+        # TODO: copy all labels? -> how best?
     else:
         output_omezarr = omezarr
 
@@ -66,17 +68,25 @@ def basic_apply_illumination_profile(
         # Correct each FOV
         for roi in roi_table.rois():
             patch = source_image.get_roi(
-                roi, c=channel_idx, axes_order=["c","z","y","x"]
+                roi, c=channel_idx, axes_order=["c", "z", "y", "x"]
             )
             patch_corrected = correct(patch, flatfield, darkfield, baseline)
             output_image.set_roi(
                 patch=patch_corrected,
                 roi=roi,
                 c=channel_idx,
-                axes_order=["c","z","y","x"],
+                axes_order=["c", "z", "y", "x"],
             )
 
     output_image.consolidate()
+
+    if not create_new_well_sub_group:
+        image_list_updates = {"image_list_updates": [{"zarr_url": zarr_url}]}
+    else:
+        image_list_updates = {
+            "image_list_updates": [{"zarr_url": new_zarr_url, "origin": zarr_url}]
+        }
+    return image_list_updates
 
 
 def correct(
