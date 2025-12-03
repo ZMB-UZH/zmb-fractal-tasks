@@ -10,14 +10,12 @@ import pandas as pd
 from ngio import open_ome_zarr_container
 from ngio.tables import FeatureTable
 from pydantic import validate_call
-from scipy.ndimage import distance_transform_edt
-from skimage.measure import regionprops, regionprops_table
-from skimage.measure._regionprops import COL_DTYPES
 
 from zmb_fractal_tasks.from_fractal_tasks_core.channels import (
     ChannelInputModel,
     get_omero_channel_list,
 )
+from zmb_fractal_tasks.utils.regionprops_table_plus import regionprops_table_plus
 
 
 @validate_call
@@ -26,21 +24,21 @@ def measure_features(
     zarr_url: str,
     output_table_name: str,
     label_name: str,
-    annotation_label_names: Optional[Sequence[str]] = None,
-    shortest_distance_label_names: Optional[Sequence[str]] = None,
     channels_to_include: Optional[Sequence[ChannelInputModel]] = None,
     channels_to_exclude: Optional[Sequence[ChannelInputModel]] = None,
     structure_props: Optional[Sequence[str]] = None,
     intensity_props: Optional[Sequence[str]] = None,
     level: str = "0",
-    overwrite: bool = True,
+    roi_table_name: str = "FOV_ROI_table",
+    append: bool = True,
+    overwrite: bool = False,
 ) -> None:
     """Calculate features based on label image and intensity image (optional).
 
     Takes a label image and an optional intensity image and calculates
-    morphology, intensity and texture features in 2D.
-
-    TODO: Currently only works for well-plates, since it also writes well_name.
+    morphology, intensity and texture features in 2D. Writes results to a
+    feature table in the OME-Zarr file. If a feature table with the same name
+    already exists, the features will be added to the existing table.
 
     Args:
         zarr_url: Path or url to the individual OME-Zarr image to be processed.
@@ -48,11 +46,6 @@ def measure_features(
         output_table_name: Name of the output table.
         label_name: Name of the label that contains the seeds.
             Needs to exist in OME-Zarr file.
-        annotation_label_names: List of label names that should be used
-            to annotate the labels. Need to exist in OME-Zarr file.
-        shortest_distance_label_names: List of label names that should be used
-            to calculate the shortest distance to the labels.
-            Need to exist in OME-Zarr file.
         channels_to_include: List of channels to include for intensity
             and texture measurements. Use the channel label to indicate
             single channels. If None, all channels are included.
@@ -64,52 +57,35 @@ def measure_features(
                 ROI_table_name: Name of the ROI table to process.
         level: Resolution of the label image to calculate features.
             Only tested for level 0.
-        overwrite: If True, overwrite existing feature table.
+        roi_table_name: Name of the ROI table to iterate over.
+        append: If True, append new measurements to existing table.
+        overwrite: Only used if append is False. If True, overwrite existing
+            table. If False, raise error if table already exists.
     """
     omezarr = open_ome_zarr_container(zarr_url)
     label_image = omezarr.get_label(label_name, path=level)
-    if annotation_label_names:
-        annotation_label_images = {
-            name: omezarr.get_label(name, path=level) for name in annotation_label_names
-        }
-    else:
-        annotation_label_images = {}
-    if shortest_distance_label_names:
-        shortest_distance_label_images = {
-            name: omezarr.get_label(name, path=level)
-            for name in shortest_distance_label_names
-        }
-    else:
-        shortest_distance_label_images = {}
     intensity_image = omezarr.get_image(path=level)
 
     # find plate and well names
-    plate_name = Path(Path(zarr_url).as_posix().split(".zarr/")[0]).name
-    component = Path(zarr_url).as_posix().split(".zarr/")[1]
-    well_name = component.split("/")[0] + component.split("/")[1]
+    plate_name = Path(Path(zarr_url).as_posix().split(".zarr/")[0]).stem
+    try:
+        component = Path(zarr_url).as_posix().split(".zarr/")[1]
+        well_name = component.split("/")[0] + component.split("/")[1]
+    except Exception:
+        well_name = "None"
 
     logging.info(f"Calculating {output_table_name} for well {well_name}")
 
-    # TODO: expose which roi-table to use?
-    roi_table = omezarr.get_table("FOV_ROI_table", check_type="roi_table")
+    roi_table = omezarr.get_table(roi_table_name, check_type="roi_table")
 
     measurements = []
     for roi in roi_table.rois():
         # load label image
         label_patch = label_image.get_roi(roi, mode="numpy", axes_order="zyx")
-        # load annotation label images
-        annotation_label_patches = {
-            name: image.get_roi(roi, mode="numpy", axes_order="zyx")
-            for name, image in annotation_label_images.items()
-        }
-        # load shortest distance label images
-        shortest_distance_label_patches = {
-            name: image.get_roi(roi, mode="numpy", axes_order="zyx")
-            for name, image in shortest_distance_label_images.items()
-        }
 
         # load intensity images
         # first, get all channels in the acquisition and find the ones of interest
+        # TODO: handle with ngio
         omero_channels = get_omero_channel_list(image_zarr_path=zarr_url)
         if channels_to_include:
             channel_labels_to_include = [c.label for c in channels_to_include]
@@ -142,12 +118,8 @@ def measure_features(
 
         measurement = measure_features_ROI(
             labels=label_patch,
-            annotations_list=list(annotation_label_patches.values()),
             intensities_list=[data[0] for data in intensity_patches.values()],
-            shortest_distance_list=list(shortest_distance_label_patches.values()),
-            ann_prefix_list=annotation_label_patches.keys(),
             int_prefix_list=intensity_patches.keys(),
-            dist_prefix_list=shortest_distance_label_patches.keys(),
             structure_props=structure_props,
             intensity_props=intensity_props,
             pxl_sizes=(
@@ -163,137 +135,48 @@ def measure_features(
         )
         measurements.append(measurement)
 
-    df_measurements = pd.concat(measurements, axis=0, ignore_index=True)
+    df_measurements = pd.concat(measurements, axis=0)
+
+    if append and (output_table_name in omezarr.list_tables()):
+        feat_table_org = omezarr.get_table(
+            output_table_name, check_type="feature_table"
+        )
+        df_org = feat_table_org.dataframe
+        # Ensure same index (labels) to avoid misalignment
+        if not df_org.index.equals(df_measurements.index):
+            raise ValueError(
+                "Index mismatch between existing feature table and new measurements."
+            )
+        # Merge horizontally
+        df_measurements = pd.concat([df_org, df_measurements], axis=1)
+        # Remove duplicate columns, keeping the values from new df (rightmost)
+        df_measurements = df_measurements.loc[
+            :, ~df_measurements.columns.duplicated(keep="last")
+        ]
+
+    if append:
+        overwrite = True
 
     feat_table = FeatureTable(df_measurements, reference_label=label_name)
-    omezarr.add_table(output_table_name, feat_table, overwrite=True)
-
-
-def most_frequent_value(mask, img):  # noqa: D103
-    masked_img = img[mask].astype(int)
-    return np.bincount(masked_img).argmax()
-
-
-def intensity_std(mask, img):  # noqa: D103
-    masked_img = img[mask]
-    return np.std(masked_img)
-
-
-def intensity_total(mask, img):  # noqa: D103
-    masked_img = img[mask]
-    return np.sum(masked_img)
-
-
-FUNS_PLUS = {
-    "most_frequent_value": most_frequent_value,
-    "intensity_std": intensity_std,
-    "intensity_total": intensity_total,
-}
-
-
-def regionprops_plus(
-    label_image,
-    intensity_image=None,
-    cache=True,
-    *,
-    extra_properties=None,
-    spacing=None,
-    offset=None,
-):
-    """Wrapper around regionprops, to integrate extra properties.
-
-    The additional properties are:
-    - most_frequent_value
-        returns most frequent value of img inside mask
-        (mainly used for annotating labels, where img are annotation labels)
-    - intensity_std: float
-        standard deviation of pixel values
-    - intensity_total:
-        sum of pixel values
-    """
-    properties_plus = [most_frequent_value, intensity_std, intensity_total]
-    if extra_properties is not None:
-        extra_properties = extra_properties + properties_plus
-    else:
-        extra_properties = properties_plus
-    return regionprops(
-        label_image=label_image,
-        intensity_image=intensity_image,
-        cache=cache,
-        extra_properties=extra_properties,
-        spacing=spacing,
-        offset=offset,
-    )
-
-
-def regionprops_table_plus(
-    label_image,
-    intensity_image=None,
-    properties=("label", "bbox"),
-    *,
-    cache=True,
-    separator="-",
-    extra_properties=None,
-    spacing=None,
-):
-    """Like skimage.measure.regionprops_table(), but with some additional properties:
-
-    - most_frequent_value
-        returns most frequent value of img inside mask
-        (mainly used for annotating labels, where img are annotation labels)
-    - intensity_std: float
-        standard deviation of pixel values
-    - intensity_total:
-        sum of pixel values
-    """
-    properties_org = []
-    properties_plus = []
-    for prop in properties:
-        if prop in COL_DTYPES.keys():
-            properties_org.append(prop)
-        elif prop in FUNS_PLUS.keys():
-            properties_plus.append(FUNS_PLUS[prop])
-    rpt = regionprops_table(
-        label_image,
-        intensity_image,
-        properties=properties_org,
-        cache=cache,
-        separator=separator,
-        extra_properties=properties_plus,
-        spacing=spacing,
-    )
-    return {
-        prop: rpt[prop] for prop in properties
-    }  # sort table according to input properties
+    omezarr.add_table(output_table_name, feat_table, overwrite=overwrite)
 
 
 def measure_features_ROI(
     labels,
-    annotations_list,
     intensities_list,
-    shortest_distance_list,
-    ann_prefix_list=None,
     int_prefix_list=None,
-    dist_prefix_list=None,
     structure_props=None,
     intensity_props=None,
     pxl_sizes=None,
-    optional_columns: Optional[dict[str, Any]] = None,
+    optional_columns: dict[str, Any] | None = None,
 ):
     """Returns measurements of labels.
 
     Args:
         labels: Label image to be measured
-        annotations_list: list of label images, which are used to annotate
-            labels
         intensities_list: list of intensity images to measure
-        shortest_distance_list: list of label images, for which the shortest
-            distance is calculated
-        ann_prefix_list: prefix to use for annotations (default: ann0, ann1, ann2,...)
         int_prefix_list: prefix to use for intensity measurements
             (default: c0, c1, c2, ...)
-        dist_prefix_list: prefix to use for shortest_distance measurements
-            (default: dist0, dist1, dist2, ...)
         structure_props: list of structure properties to measure
         intensity_props: list of intensity properties to measure
         pxl_sizes: list of pixel sizes, must have same length as passed image
@@ -311,34 +194,9 @@ def measure_features_ROI(
     df = pd.DataFrame(index=np.unique(labels)[np.unique(labels) != 0])
     df.index.name = "label"
 
-    # assign labels to annotations
-    if ann_prefix_list is None:
-        ann_prefix_list = [f"ann{i}" for i in range(len(annotations_list))]
-    df_ann_list = []
-    for annotations, ann_prefix in zip(annotations_list, ann_prefix_list):
-        df_ann = pd.DataFrame(
-            regionprops_table_plus(
-                labels,
-                annotations,
-                properties=(
-                    [
-                        "label",
-                        "most_frequent_value",
-                    ]
-                ),
-            )
-        )
-        df_ann = df_ann.rename(
-            columns={
-                "most_frequent_value": f"{ann_prefix}_ID",
-            }
-        )
-        df_ann.set_index("label", inplace=True)
-        df_ann_list.append(df_ann)
-
     # do structure measurements
     if structure_props is None:
-        structure_props = ["num_pixels"]
+        structure_props = ["num_pixels", "area"]
     df_struct = pd.DataFrame(
         regionprops_table_plus(
             labels,
@@ -355,7 +213,7 @@ def measure_features_ROI(
     if intensity_props is None:
         intensity_props = ["intensity_mean", "intensity_std", "intensity_total"]
     df_int_list = []
-    for intensities, int_prefix in zip(intensities_list, int_prefix_list):
+    for intensities, int_prefix in zip(intensities_list, int_prefix_list, strict=True):
         df_int = pd.DataFrame(
             regionprops_table_plus(
                 labels,
@@ -370,43 +228,15 @@ def measure_features_ROI(
         df_int.set_index("label", inplace=True)
         df_int_list.append(df_int)
 
-    # calculated shortest distances
-    if dist_prefix_list is None:
-        dist_prefix_list = [f"dist{i}" for i in range(len(shortest_distance_list))]
-    df_dist_list = []
-    for dist_label, dist_prefix in zip(shortest_distance_list, dist_prefix_list):
-        dist_transform = distance_transform_edt(
-            np.logical_not(dist_label), sampling=pxl_sizes
-        )
-        df_dist = pd.DataFrame(
-            regionprops_table(
-                labels,
-                dist_transform,
-                properties=(
-                    [
-                        "label",
-                        "intensity_min",
-                    ]
-                ),
-                spacing=pxl_sizes,
-            )
-        )
-        df_dist = df_dist.rename(
-            columns={
-                "intensity_min": f"shortest_distance_to_{dist_prefix}",
-            }
-        )
-        df_dist.set_index("label", inplace=True)
-        df_dist_list.append(df_dist)
     # combine all
     df = pd.concat(
-        [df, *df_ann_list, df_struct, *df_int_list, *df_dist_list],
+        [df, df_struct, *df_int_list],
         axis=1,
     )
     # add additional columns:
     for i, (col_name, col_val) in enumerate(optional_columns.items()):
         df.insert(i, col_name, col_val)
-    return df.reset_index()
+    return df
 
 
 if __name__ == "__main__":

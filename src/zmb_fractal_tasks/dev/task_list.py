@@ -61,6 +61,20 @@ TASK_LIST = [
         tags=["Measure"],
     ),
     ParallelTask(
+        name="Measure parent label",
+        executable="measure_parent_label.py",
+        meta={"cpus_per_task": 1, "mem": 4000},
+        category="Measurement",
+        tags=["Measure"],
+    ),
+    ParallelTask(
+        name="Measure shortest distance to label",
+        executable="measure_shortest_distance.py",
+        meta={"cpus_per_task": 1, "mem": 4000},
+        category="Measurement",
+        tags=["Measure"],
+    ),
+    ParallelTask(
         name="Cellpose segmentation, simple",
         executable="segment_cellpose_simple.py",
         meta={"cpus_per_task": 1, "mem": 4000},

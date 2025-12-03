@@ -7,13 +7,13 @@ def test_measure_features(zarr_MIP_path):
         zarr_url=str(zarr_MIP_path / "B" / "03" / "0"),
         output_table_name="nuclei_features",
         label_name="nuclei",
-        annotation_label_names=["wf_2_labels", "wf_3_labels"],
-        shortest_distance_label_names=["wf_4_labels"],
         channels_to_include=[ChannelInputModel(label="DAPI")],
         channels_to_exclude=None,
         structure_props=["area"],
         intensity_props=["intensity_total"],
         level="0",
+        roi_table_name="FOV_ROI_table",
+        append=False,
         overwrite=True,
     )
     # TODO: Check outputs

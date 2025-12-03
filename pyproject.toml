@@ -29,6 +29,7 @@ requires-python = ">=3.11"
 dependencies = [
     "anndata",
     "basicpy",
+    "hyperactive<5", # pin to avoid issues with hyperactive 5. TODO: remove pin when fixed
     "cellpose>=3.0.0,<4.0.0",
     "dask",
     "fractal-task-tools",

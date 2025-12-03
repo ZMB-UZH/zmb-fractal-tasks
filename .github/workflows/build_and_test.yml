@@ -28,6 +28,12 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
+      - name: Free up disk space on Ubuntu
+        if: matrix.os == 'ubuntu-22.04'
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
@@ -80,7 +86,7 @@ jobs:
 
       - name: 🚢 Publish to PyPI
         # TODO remove the "if: false" line when the package is ready for pypi release
-        if: false
+        #if: false
         uses: pypa/gh-action-pypi-publish@release/v1
 
       - uses: softprops/action-gh-release@v2
