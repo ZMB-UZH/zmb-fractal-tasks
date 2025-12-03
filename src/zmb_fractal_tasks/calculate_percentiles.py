@@ -15,14 +15,14 @@ def calculate_percentiles(
     zarr_url: str,
     level: str = "0",
     percentiles: Sequence[float] = (1, 99),
-) -> dict:
+) -> None:
     """Calculate percentiles of image and write them to omero-channels.
 
     Args:
         zarr_url: Absolute path to the OME-Zarr image.
             (standard argument for Fractal tasks, managed by Fractal server).
         level: Resolution level to calculate percentiles on.
-        percentiles: lower and upper percentiles to calculate
+        percentiles: lower and upper percentiles to calculate (e.g. [1, 99]).
     """
     # Preliminary checks
     for percentile in percentiles:

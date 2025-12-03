@@ -80,12 +80,12 @@ def basic_apply_illumination_profile(
 
     output_image.consolidate()
 
-    if not create_new_well_sub_group:
-        image_list_updates = {"image_list_updates": [{"zarr_url": zarr_url}]}
-    else:
+    if create_new_well_sub_group:
         image_list_updates = {
             "image_list_updates": [{"zarr_url": new_zarr_url, "origin": zarr_url}]
         }
+    else:
+        image_list_updates = {"image_list_updates": [{"zarr_url": zarr_url}]}
     return image_list_updates
 
 

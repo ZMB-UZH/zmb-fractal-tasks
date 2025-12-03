@@ -19,8 +19,10 @@ TASK_LIST = [
     ),
     ParallelTask(
         name="BaSiC: Apply illumination profile",
+        input_types={"illumination_corrected": False},
         executable="basic_apply_illumination_profile.py",
-        meta={"cpus_per_task": 1, "mem": 4000},
+        output_types={"illumination_corrected": True},
+        meta={"cpus_per_task": 8, "mem": 32000},
         category="Image Processing",
         tags=["Illumination correction", "BaSiC"],
         # docs_info="file:docs_info/thresholding_task.md",

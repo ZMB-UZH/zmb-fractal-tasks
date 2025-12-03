@@ -20,7 +20,7 @@ def calculate_histograms(
     bin_width: float = 1,
     omero_percentiles: Optional[Sequence[float]] = None,
     histogram_name: str = "channel_histograms",
-) -> dict:
+) -> None:
     """Calculate channel histograms of image.
 
     Args:
@@ -30,7 +30,8 @@ def calculate_histograms(
         input_ROI_table: Name of the ROI table over which the task loops
         bin_width: Width of the histogram bins. Default is 1.
         omero_percentiles: Percentiles to calculate and add to the omero metadata.
-            If None, no percentiles are calculated.
+            If None, no percentiles are calculated. E.g. [1, 99]
+        histogram_name: Name of the output histogram table.
     """
     omezarr = open_ome_zarr_container(zarr_url)
 
@@ -52,7 +53,7 @@ def calculate_histograms(
     adata = histograms_to_anndata(channel_histos)
     adata.uns["level"] = level
     generic_table = GenericTable(table_data=adata)
-    omezarr.add_table("channel_histograms", generic_table)
+    omezarr.add_table(histogram_name, generic_table)
 
     if omero_percentiles is not None:
         if len(omero_percentiles) != 2:

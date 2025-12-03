@@ -24,10 +24,11 @@ def aggregate_plate_histograms(
     zarr_dir: str,
     histogram_input_name: str = "channel_histograms",
     omero_percentiles: Optional[Sequence[float]] = None,
-) -> dict:
+) -> None:
     """Find all channel histograms in a plate and combine them.
 
     In each image, a new table is created with the combined histograms.
+    The new table is named as the input histogram table with suffix "_plate".
 
     Args:
         zarr_urls: List of paths or urls to the individual OME-Zarr images to

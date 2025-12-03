@@ -25,7 +25,7 @@ def basic_calculate_illumination_profile_plate(
     random_seed: Optional[int] = None,
     basic_smoothness: float = 1,
     get_darkfield: bool = True,
-) -> dict:
+) -> None:
     """Calculate illumination profiles for all channels in a plate using BaSiC.
 
     Calculates illumination correction profiles based on a random sample
@@ -82,7 +82,9 @@ def basic_calculate_illumination_profile_plate(
                 channel_idx = ngio_image.channel_labels.index(channel)
                 roi_table = omezarr.get_table("FOV_ROI_table")
                 for roi in roi_table.rois():
-                    roi_data = ngio_image.get_roi(roi, axes_order=["c","z","y","x"], c=channel_idx, mode="dask")
+                    roi_data = ngio_image.get_roi(
+                        roi, axes_order=["c", "z", "y", "x"], c=channel_idx, mode="dask"
+                    )
                     fov_data_all.append(roi_data)
         if len(fov_data_all) >= n_images:
             logging.info(f"Using {n_images} random images out of {len(fov_data_all)}.")
