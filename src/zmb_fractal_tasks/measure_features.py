@@ -23,12 +23,12 @@ def measure_features(
     *,
     zarr_url: str,
     output_table_name: str,
-    label_name: str,
+    input_label_name: str,
     channels_to_include: Optional[Sequence[ChannelInputModel]] = None,
     channels_to_exclude: Optional[Sequence[ChannelInputModel]] = None,
     structure_props: Optional[Sequence[str]] = None,
     intensity_props: Optional[Sequence[str]] = None,
-    level: str = "0",
+    pyramid_level: str = "0",
     roi_table_name: str = "FOV_ROI_table",
     append: bool = True,
     overwrite: bool = False,
@@ -44,7 +44,7 @@ def measure_features(
         zarr_url: Path or url to the individual OME-Zarr image to be processed.
             (standard argument for Fractal tasks, managed by Fractal server).
         output_table_name: Name of the output table.
-        label_name: Name of the label that contains the seeds.
+        input_label_name: Name of the label that contains the seeds.
             Needs to exist in OME-Zarr file.
         channels_to_include: List of channels to include for intensity
             and texture measurements. Use the channel label to indicate
@@ -55,16 +55,17 @@ def measure_features(
         structure_props: List of regionprops structure properties to measure.
         intensity_props: List of regionprops intensity properties to measure.
                 ROI_table_name: Name of the ROI table to process.
-        level: Resolution of the label image to calculate features.
-            Only tested for level 0.
+        pyramid_level: Resolution level of the label image to calculate
+            features on. Choose `0` for full resolution.
+            Only tested for 2D images at level 0.
         roi_table_name: Name of the ROI table to iterate over.
         append: If True, append new measurements to existing table.
         overwrite: Only used if append is False. If True, overwrite existing
             table. If False, raise error if table already exists.
     """
     omezarr = open_ome_zarr_container(zarr_url)
-    label_image = omezarr.get_label(label_name, path=level)
-    intensity_image = omezarr.get_image(path=level)
+    label_image = omezarr.get_label(input_label_name, path=pyramid_level)
+    intensity_image = omezarr.get_image(path=pyramid_level)
 
     # find plate and well names
     plate_name = Path(Path(zarr_url).as_posix().split(".zarr/")[0]).stem
@@ -157,7 +158,7 @@ def measure_features(
     if append:
         overwrite = True
 
-    feat_table = FeatureTable(df_measurements, reference_label=label_name)
+    feat_table = FeatureTable(df_measurements, reference_label=input_label_name)
     omezarr.add_table(output_table_name, feat_table, overwrite=overwrite)
 
 

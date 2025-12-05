@@ -8,7 +8,7 @@ def test_expand_segmentation(zarr_MIP_path):
         expansion_distance=10,
         save_union=True,
         union_output_label_name="cells",
-        save_diff=True,
-        diff_output_label_name="cytoplasms",
+        save_difference=True,
+        difference_output_label_name="cytoplasms",
     )
     # TODO: Check outputs

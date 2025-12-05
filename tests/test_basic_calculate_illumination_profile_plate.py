@@ -9,9 +9,9 @@ def test_basic_calculate_illumination_profile_plate(tmpdir, zarr_path):
         zarr_dir=str(tmpdir),
         illumination_profiles_folder=str(tmpdir / "illumination_profiles"),
         n_images=200,
-        overwrite=True,
+        overwrite_illumination_profiles=True,
         random_seed=11,
         basic_smoothness=1.0,
-        get_darkfield=True,
+        calculate_darkfield=True,
     )
     # TODO: Check outputs

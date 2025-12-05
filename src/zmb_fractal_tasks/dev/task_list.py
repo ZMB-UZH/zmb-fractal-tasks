@@ -42,8 +42,8 @@ TASK_LIST = [
         tags=["Percentiles", "Histogram", "Normalization"],
     ),
     ParallelTask(
-        name="Calculate percentiles",
-        executable="calculate_percentiles.py",
+        name="Update display range",
+        executable="update_display_range.py",
         meta={"cpus_per_task": 1, "mem": 4000},
         category="Measurement",
         tags=["Percentiles", "Histogram", "Normalization"],

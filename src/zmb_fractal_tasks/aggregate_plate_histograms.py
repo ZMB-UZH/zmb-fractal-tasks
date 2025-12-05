@@ -23,7 +23,9 @@ def aggregate_plate_histograms(
     zarr_urls: list[str],
     zarr_dir: str,
     histogram_input_name: str = "channel_histograms",
-    omero_percentiles: Optional[Sequence[float]] = None,
+    histogram_output_name: str = "channel_histograms_plate",
+    update_display_range: bool = True,
+    display_range_percentiles: Sequence[float] = (0.5, 99.5),
 ) -> None:
     """Find all channel histograms in a plate and combine them.
 
@@ -37,9 +39,12 @@ def aggregate_plate_histograms(
         zarr_dir: Not used for this task.
             (Standard argument for Fractal tasks, managed by Fractal server).
         histogram_input_name: Table name of the histogram table to be combined.
-        omero_percentiles: Percentiles to calculate from the combine histogram
-            and add to the omero metadata.
-            If None, no percentiles are calculated.
+        histogram_output_name: Table name of the output combined histogram.
+        update_display_range: If True, update the display range of the image.
+            (Saved in the omero metadata of the zarr file).
+        display_range_percentiles: Percentiles (e.g. [0.5, 99.5]) to use
+            for display range calculation. (Only used if update_display_range
+            is True).
     """
     # identify plates
     plate_to_urls = {}
@@ -57,7 +62,7 @@ def aggregate_plate_histograms(
             ome_zarr_container = open_ome_zarr_container(zarr_url)
             table = ome_zarr_container.get_table(histogram_input_name)
             adata = table.anndata
-            levels.append(adata.uns["level"])
+            levels.append(adata.uns["pyramid_level"])
             histo_dict = anndata_to_histograms(adata)
             for channel, histo in histo_dict.items():
                 if channel not in combined_channel_histogram:
@@ -80,18 +85,19 @@ def aggregate_plate_histograms(
         generic_table = GenericTable(table_data=adata)
         for zarr_url in plate_zarr_urls:
             omezarr = open_ome_zarr_container(zarr_url)
-            omezarr.add_table(histogram_input_name+"_plate", generic_table)
+            omezarr.add_table(histogram_output_name, generic_table)
 
         # calculate percentiles & write omero metadata
-        if omero_percentiles is not None:
-            if len(omero_percentiles) != 2:
+        if update_display_range:
+            if len(display_range_percentiles) != 2:
                 raise ValueError(
-                    "omero_percentiles should be a list of two values: [lower, upper]"
+                    "display_range_percentiles should be a list of two "
+                    "values: [lower, upper]"
                 )
             percentile_values = {}
             for channel, histo in combined_channel_histogram.items():
                 percentile_values[channel] = histo.get_quantiles(
-                    [p / 100 for p in omero_percentiles]
+                    [p / 100 for p in display_range_percentiles]
                 )
             # write omero metadata for all images in the plate
             for zarr_url in plate_zarr_urls:

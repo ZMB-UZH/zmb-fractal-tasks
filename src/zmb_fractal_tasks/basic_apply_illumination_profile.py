@@ -15,8 +15,8 @@ def basic_apply_illumination_profile(
     zarr_url: str,
     illumination_profiles_folder: str,
     subtract_median_baseline: bool = False,
-    create_new_well_sub_group: bool = False,
-    new_well_sub_group_suffix: str = "illumination_corrected",
+    overwrite_input_image: bool = True,
+    new_well_subgroup_suffix: str = "illumination_corrected",
 ) -> dict[str, Any]:
     """Applies illumination correction to the OME-Zarr.
 
@@ -26,24 +26,24 @@ def basic_apply_illumination_profile(
         illumination_profiles_folder: Path of folder of illumination profiles.
         subtract_median_baseline: If True, subtract the median of all baseline
             values from the corrected image.
-        create_new_well_sub_group: Whether to create a new well sub-group
-            in the OME-Zarr to store the corrected images.
-        new_well_sub_group_suffix: Suffix to add to the new well sub-group
-            name, if `create_new_well_sub_group` is True.
+        overwrite_input_image: If True, overwrite the input image. If False,
+            create a new well sub-group to store the corrected image.
+        new_well_subgroup_suffix: Suffix to add to the new well sub-group
+            name. Only used if overwrite_input_image is False.
     """
     omezarr = open_ome_zarr_container(zarr_url)
 
-    if create_new_well_sub_group:
+    if overwrite_input_image:
+        output_omezarr = omezarr
+    else:
         new_zarr_url = Path(zarr_url).parent / (
-            Path(zarr_url).stem + "_" + new_well_sub_group_suffix
+            Path(zarr_url).stem + "_" + new_well_subgroup_suffix
         )
         output_omezarr = omezarr.derive_image(new_zarr_url, overwrite=True)
         # copy all tables
         for table_name in omezarr.list_tables():
             output_omezarr.add_table(table_name, omezarr.get_table(table_name))
         # TODO: copy all labels? -> how best?
-    else:
-        output_omezarr = omezarr
 
     source_image = omezarr.get_image()
     output_image = output_omezarr.get_image()
@@ -80,12 +80,12 @@ def basic_apply_illumination_profile(
 
     output_image.consolidate()
 
-    if create_new_well_sub_group:
+    if overwrite_input_image:
+        image_list_updates = {"image_list_updates": [{"zarr_url": zarr_url}]}
+    else:
         image_list_updates = {
             "image_list_updates": [{"zarr_url": new_zarr_url, "origin": zarr_url}]
         }
-    else:
-        image_list_updates = {"image_list_updates": [{"zarr_url": zarr_url}]}
     return image_list_updates
 
 

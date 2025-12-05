@@ -18,8 +18,8 @@ def smo_background_estimation(
     sigma: float = 0.0,
     size: int = 7,
     subtract_background: bool = False,
-    create_new_well_sub_group: bool = False,
-    new_well_sub_group_suffix: str = "BG_subtracted",
+    overwrite_input_image: bool = True,
+    new_well_subgroup_suffix: str = "_BG_subtracted",
 ) -> dict[str, Any]:
     """Estimates background of each FOV using SMO.
 
@@ -33,10 +33,10 @@ def smo_background_estimation(
             foreground objects.
         subtract_background: If True, subtract the estimated background from
             the image (clipping at zero).
-        create_new_well_sub_group: Whether to create a new well sub-group
-            in the OME-Zarr to store the corrected images.
-        new_well_sub_group_suffix: Suffix to add to the new well sub-group
-            name, if `create_new_well_sub_group` is True.
+        overwrite_input_image: If True, overwrite the input image. If False,
+            create a new well sub-group to store the corrected image.
+        new_well_subgroup_suffix: Suffix to add to the new well sub-group
+            name. Only used if overwrite_input_image is False.
     """
     omezarr = open_ome_zarr_container(zarr_url)
     source_image = omezarr.get_image()
@@ -63,17 +63,17 @@ def smo_background_estimation(
     # Apply BG subtraction
     if subtract_background:
         # open new ome-zarr
-        if create_new_well_sub_group:
+        if overwrite_input_image:
+            output_omezarr = omezarr
+        else:
             new_zarr_url = Path(zarr_url).parent / (
-                Path(zarr_url).stem + "_" + new_well_sub_group_suffix
+                Path(zarr_url).stem + new_well_subgroup_suffix
             )
             output_omezarr = omezarr.derive_image(new_zarr_url, overwrite=True)
             # copy all tables
             for table_name in omezarr.list_tables():
                 output_omezarr.add_table(table_name, omezarr.get_table(table_name))
             # TODO: copy all labels? -> how best?
-        else:
-            output_omezarr = omezarr
         output_image = output_omezarr.get_image()
 
         # cycle through FOVs and channels and subtract BG
@@ -87,12 +87,12 @@ def smo_background_estimation(
 
         output_image.consolidate()
 
-        if create_new_well_sub_group:
+        if overwrite_input_image:
+            image_list_updates = {"image_list_updates": [{"zarr_url": zarr_url}]}
+        else:
             image_list_updates = {
                 "image_list_updates": [{"zarr_url": new_zarr_url, "origin": zarr_url}]
             }
-        else:
-            image_list_updates = {"image_list_updates": [{"zarr_url": zarr_url}]}
     else:
         image_list_updates = {}
 

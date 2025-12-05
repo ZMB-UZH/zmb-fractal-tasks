@@ -21,10 +21,10 @@ def basic_calculate_illumination_profile_plate(
     zarr_dir: str,
     illumination_profiles_folder: str,
     n_images: int = 128,
-    overwrite: bool = False,
+    overwrite_illumination_profiles: bool = False,
     random_seed: Optional[int] = None,
     basic_smoothness: float = 1,
-    get_darkfield: bool = True,
+    calculate_darkfield: bool = True,
 ) -> None:
     """Calculate illumination profiles for all channels in a plate using BaSiC.
 
@@ -41,12 +41,13 @@ def basic_calculate_illumination_profile_plate(
         illumination_profiles_folder: Path to folder where illumination
             profiles will be saved.
         n_images: Number of images to sample for illumination correction.
-        overwrite: If True, overwrite existing illumination profiles.
+        overwrite_illumination_profiles: If True, overwrite existing
+            illumination profiles.
         random_seed: integer random seed to initialize random number generator.
             None will result in non-reproducibel outputs.
         basic_smoothness: Smoothing parameter for BaSiC (used for both flat-
             and dark-field).
-        get_darkfield: If True, calculate darkfield correction.
+        calculate_darkfield: If True, also calculate darkfield correction.
     """
     random.seed(random_seed)
 
@@ -110,7 +111,7 @@ def basic_calculate_illumination_profile_plate(
         # calculate illumination correction profile
         logging.info("Calculating illumination correction profile...")
         basic = BaSiC(
-            get_darkfield=get_darkfield,
+            get_darkfield=calculate_darkfield,
             smoothness_flatfield=basic_smoothness,
             smoothness_darkfield=basic_smoothness,
         )
@@ -119,7 +120,7 @@ def basic_calculate_illumination_profile_plate(
         # save illumination correction profile
         logging.info("Saving illumination correction profile...")
         folder_path = Path(illumination_profiles_folder) / f"{channel}"
-        if overwrite:
+        if overwrite_illumination_profiles:
             if os.path.isdir(folder_path):
                 shutil.rmtree(folder_path)
         folder_path.mkdir(parents=True, exist_ok=False)

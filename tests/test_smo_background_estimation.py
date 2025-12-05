@@ -9,7 +9,7 @@ def test_smo_background_estimation(zarr_path):
         sigma=0,
         size=7,
         subtract_background=False,
-        create_new_well_sub_group=True,
-        new_well_sub_group_suffix="BG_subtracted",
+        overwrite_input_image=False,
+        new_well_subgroup_suffix="BG_subtracted",
     )
     # TODO: Check outputs

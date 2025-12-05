@@ -37,13 +37,29 @@
             "type": "string",
             "description": "Table name of the histogram table to be combined."
           },
-          "omero_percentiles": {
+          "histogram_output_name": {
+            "default": "channel_histograms_plate",
+            "title": "Histogram Output Name",
+            "type": "string",
+            "description": "Table name of the output combined histogram."
+          },
+          "update_display_range": {
+            "default": true,
+            "title": "Update Display Range",
+            "type": "boolean",
+            "description": "If True, update the display range of the image. (Saved in the omero metadata of the zarr file)."
+          },
+          "display_range_percentiles": {
+            "default": [
+              0.5,
+              99.5
+            ],
             "items": {
               "type": "number"
             },
-            "title": "Omero Percentiles",
+            "title": "Display Range Percentiles",
             "type": "array",
-            "description": "Percentiles to calculate from the combine histogram and add to the omero metadata. If None, no percentiles are calculated."
+            "description": "Percentiles (e.g. [0.5, 99.5]) to use for display range calculation. (Only used if update_display_range is True)."
           }
         },
         "required": [
@@ -93,17 +109,17 @@
             "type": "boolean",
             "description": "If True, subtract the median of all baseline values from the corrected image."
           },
-          "create_new_well_sub_group": {
-            "default": false,
-            "title": "Create New Well Sub Group",
+          "overwrite_input_image": {
+            "default": true,
+            "title": "Overwrite Input Image",
             "type": "boolean",
-            "description": "Whether to create a new well sub-group in the OME-Zarr to store the corrected images."
+            "description": "If True, overwrite the input image. If False, create a new well sub-group to store the corrected image."
           },
-          "new_well_sub_group_suffix": {
+          "new_well_subgroup_suffix": {
             "default": "illumination_corrected",
-            "title": "New Well Sub Group Suffix",
+            "title": "New Well Subgroup Suffix",
             "type": "string",
-            "description": "Suffix to add to the new well sub-group name, if `create_new_well_sub_group` is True."
+            "description": "Suffix to add to the new well sub-group name. Only used if overwrite_input_image is False."
           }
         },
         "required": [
@@ -155,9 +171,9 @@
             "type": "integer",
             "description": "Number of images to sample for illumination correction."
           },
-          "overwrite": {
+          "overwrite_illumination_profiles": {
             "default": false,
-            "title": "Overwrite",
+            "title": "Overwrite Illumination Profiles",
             "type": "boolean",
             "description": "If True, overwrite existing illumination profiles."
           },
@@ -172,11 +188,11 @@
             "type": "number",
             "description": "Smoothing parameter for BaSiC (used for both flat- and dark-field)."
           },
-          "get_darkfield": {
+          "calculate_darkfield": {
             "default": true,
-            "title": "Get Darkfield",
+            "title": "Calculate Darkfield",
             "type": "boolean",
-            "description": "If True, calculate darkfield correction."
+            "description": "If True, also calculate darkfield correction."
           }
         },
         "required": [
@@ -211,11 +227,11 @@
             "type": "string",
             "description": "Absolute path to the OME-Zarr image. (standard argument for Fractal tasks, managed by Fractal server)."
           },
-          "level": {
+          "pyramid_level": {
             "default": "0",
-            "title": "Level",
+            "title": "Pyramid Level",
             "type": "string",
-            "description": "Resolution level to calculate histograms on."
+            "description": "Resolution level to calculate histograms on. Choose `0` for full resolution."
           },
           "input_ROI_table": {
             "default": "FOV_ROI_table",
@@ -227,15 +243,25 @@
             "default": 1,
             "title": "Bin Width",
             "type": "number",
-            "description": "Width of the histogram bins. Default is 1."
+            "description": "Width of the histogram bins. A bin-width of 1 is suitable for integer-valued images (e.g. 8-bit or 16-bit images)."
           },
-          "omero_percentiles": {
+          "update_display_range": {
+            "default": true,
+            "title": "Update Display Range",
+            "type": "boolean",
+            "description": "If True, update the display range of the image. (Saved in the omero metadata of the zarr file)."
+          },
+          "display_range_percentiles": {
+            "default": [
+              0.5,
+              99.5
+            ],
             "items": {
               "type": "number"
             },
-            "title": "Omero Percentiles",
+            "title": "Display Range Percentiles",
             "type": "array",
-            "description": "Percentiles to calculate and add to the omero metadata. If None, no percentiles are calculated. E.g. [1, 99]"
+            "description": "Percentiles (e.g. [0.5, 99.5]) to use for display range calculation. (Only used if update_display_range is True)."
           },
           "histogram_name": {
             "default": "channel_histograms",
@@ -253,7 +279,7 @@
       "docs_info": "## calculate_histograms\nCalculate channel histograms of image.\n"
     },
     {
-      "name": "Calculate percentiles",
+      "name": "Update display range",
       "category": "Measurement",
       "tags": [
         "Percentiles",
@@ -261,7 +287,7 @@
         "Normalization"
       ],
       "type": "parallel",
-      "executable_parallel": "calculate_percentiles.py",
+      "executable_parallel": "update_display_range.py",
       "meta_parallel": {
         "cpus_per_task": 1,
         "mem": 4000
@@ -274,32 +300,32 @@
             "type": "string",
             "description": "Absolute path to the OME-Zarr image. (standard argument for Fractal tasks, managed by Fractal server)."
           },
-          "level": {
+          "pyramid_level": {
             "default": "0",
-            "title": "Level",
+            "title": "Pyramid Level",
             "type": "string",
-            "description": "Resolution level to calculate percentiles on."
+            "description": "Resolution level to calculate percentiles on. Choose `0` for full resolution."
           },
           "percentiles": {
             "default": [
-              1,
-              99
+              0.5,
+              99.5
             ],
             "items": {
               "type": "number"
             },
             "title": "Percentiles",
             "type": "array",
-            "description": "lower and upper percentiles to calculate (e.g. [1, 99])."
+            "description": "lower and upper percentiles to calculate e.g. [0.5, 99.5]"
           }
         },
         "required": [
           "zarr_url"
         ],
         "type": "object",
-        "title": "CalculatePercentiles"
+        "title": "UpdateDisplayRange"
       },
-      "docs_info": "## calculate_percentiles\nCalculate percentiles of image and write them to omero-channels.\n"
+      "docs_info": "## update_display_range\nUpdate display range of image based on percentiles. (Saved in omero metadata).\n"
     },
     {
       "name": "Expand segmentation",
@@ -348,24 +374,24 @@
           "union_output_label_name": {
             "title": "Union Output Label Name",
             "type": "string",
-            "description": "Name of the output label image for the union (e.g. `\"cells\"`)."
+            "description": "Name of the output label image for the union (e.g. `cells`)."
           },
-          "save_diff": {
+          "save_difference": {
             "default": true,
-            "title": "Save Diff",
+            "title": "Save Difference",
             "type": "boolean",
             "description": "If `True`, save the difference between the original and expanded labels. (corresponds to e.g. the cytoplasm)"
           },
-          "diff_output_label_name": {
-            "title": "Diff Output Label Name",
+          "difference_output_label_name": {
+            "title": "Difference Output Label Name",
             "type": "string",
-            "description": "Name of the output label image for the difference (e.g. `\"cytoplasms\"`)."
+            "description": "Name of the output label image for the difference (e.g. `cytoplasms`)."
           },
-          "overwrite": {
+          "overwrite_existing_label": {
             "default": true,
-            "title": "Overwrite",
+            "title": "Overwrite Existing Label",
             "type": "boolean",
-            "description": "If `True`, overwrite the task output."
+            "description": "If `True`, overwrite the created labels, if they already exist."
           }
         },
         "required": [
@@ -418,8 +444,8 @@
             "type": "string",
             "description": "Name of the output table."
           },
-          "label_name": {
-            "title": "Label Name",
+          "input_label_name": {
+            "title": "Input Label Name",
             "type": "string",
             "description": "Name of the label that contains the seeds. Needs to exist in OME-Zarr file."
           },
@@ -455,11 +481,11 @@
             "type": "array",
             "description": "List of regionprops intensity properties to measure. ROI_table_name: Name of the ROI table to process."
           },
-          "level": {
+          "pyramid_level": {
             "default": "0",
-            "title": "Level",
+            "title": "Pyramid Level",
             "type": "string",
-            "description": "Resolution of the label image to calculate features. Only tested for level 0."
+            "description": "Resolution level of the label image to calculate features on. Choose `0` for full resolution. Only tested for 2D images at level 0."
           },
           "roi_table_name": {
             "default": "FOV_ROI_table",
@@ -483,7 +509,7 @@
         "required": [
           "zarr_url",
           "output_table_name",
-          "label_name"
+          "input_label_name"
         ],
         "type": "object",
         "title": "MeasureFeatures"
@@ -515,8 +541,8 @@
             "type": "string",
             "description": "Name of the output table."
           },
-          "label_name": {
-            "title": "Label Name",
+          "input_label_name": {
+            "title": "Input Label Name",
             "type": "string",
             "description": "Name of the label that contains the seeds. Needs to exist in OME-Zarr file."
           },
@@ -528,11 +554,11 @@
             "type": "array",
             "description": "Names of the parent labels to assign to."
           },
-          "level": {
+          "pyramid_level": {
             "default": "0",
-            "title": "Level",
+            "title": "Pyramid Level",
             "type": "string",
-            "description": "Resolution of the label image to use for calculations."
+            "description": "Resolution level of the label image to use for calculations. Choose `0` for full resolution. Only tested for 2D images at level 0."
           },
           "roi_table_name": {
             "default": "FOV_ROI_table",
@@ -556,7 +582,7 @@
         "required": [
           "zarr_url",
           "output_table_name",
-          "label_name",
+          "input_label_name",
           "parent_label_names"
         ],
         "type": "object",
@@ -589,8 +615,8 @@
             "type": "string",
             "description": "Name of the output table."
           },
-          "label_name": {
-            "title": "Label Name",
+          "input_label_name": {
+            "title": "Input Label Name",
             "type": "string",
             "description": "Name of the label that contains the seeds. Needs to exist in OME-Zarr file."
           },
@@ -602,11 +628,11 @@
             "type": "array",
             "description": "Names of the target labels to measure distance to."
           },
-          "level": {
+          "pyramid_level": {
             "default": "0",
-            "title": "Level",
+            "title": "Pyramid Level",
             "type": "string",
-            "description": "Resolution of the label image to use for calculations."
+            "description": "Resolution level of the label image to use for calculations. Choose `0` for full resolution. Only tested for 2D images at level 0."
           },
           "roi_table_name": {
             "default": "FOV_ROI_table",
@@ -630,7 +656,7 @@
         "required": [
           "zarr_url",
           "output_table_name",
-          "label_name",
+          "input_label_name",
           "target_label_names"
         ],
         "type": "object",
@@ -724,9 +750,9 @@
             "type": "string",
             "description": "Path or url to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
           },
-          "level": {
+          "pyramid_level": {
             "default": "0",
-            "title": "Level",
+            "title": "Pyramid Level",
             "type": "string",
             "description": "Pyramid level of the image to be segmented. Choose `0` to process at full resolution."
           },
@@ -781,11 +807,11 @@
             "type": "boolean",
             "description": "Run dynamics at original image size (will be slower but create more accurate boundaries)."
           },
-          "overwrite": {
+          "overwrite_existing_label": {
             "default": true,
-            "title": "Overwrite",
+            "title": "Overwrite Existing Label",
             "type": "boolean",
-            "description": "If `True`, overwrite the task output."
+            "description": "If `True`, overwrite the created labels, if they already exist."
           }
         },
         "required": [
@@ -885,9 +911,9 @@
             "type": "string",
             "description": "Path or url to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
           },
-          "level": {
+          "pyramid_level": {
             "default": "0",
-            "title": "Level",
+            "title": "Pyramid Level",
             "type": "string",
             "description": "Pyramid level of the image to be segmented. Choose `0` to process at full resolution."
           },
@@ -1004,17 +1030,17 @@
             "type": "boolean",
             "description": "If True, subtract the estimated background from the image (clipping at zero)."
           },
-          "create_new_well_sub_group": {
-            "default": false,
-            "title": "Create New Well Sub Group",
+          "overwrite_input_image": {
+            "default": true,
+            "title": "Overwrite Input Image",
             "type": "boolean",
-            "description": "Whether to create a new well sub-group in the OME-Zarr to store the corrected images."
+            "description": "If True, overwrite the input image. If False, create a new well sub-group to store the corrected image."
           },
-          "new_well_sub_group_suffix": {
-            "default": "BG_subtracted",
-            "title": "New Well Sub Group Suffix",
+          "new_well_subgroup_suffix": {
+            "default": "_BG_subtracted",
+            "title": "New Well Subgroup Suffix",
             "type": "string",
-            "description": "Suffix to add to the new well sub-group name, if `create_new_well_sub_group` is True."
+            "description": "Suffix to add to the new well sub-group name. Only used if overwrite_input_image is False."
           }
         },
         "required": [

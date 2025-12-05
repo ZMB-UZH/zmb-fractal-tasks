@@ -19,9 +19,9 @@ def measure_parent_label(
     *,
     zarr_url: str,
     output_table_name: str,
-    label_name: str,
+    input_label_name: str,
     parent_label_names: Sequence[str],
-    level: str = "0",
+    pyramid_level: str = "0",
     roi_table_name: str = "FOV_ROI_table",
     append: bool = True,
     overwrite: bool = False,
@@ -35,19 +35,21 @@ def measure_parent_label(
         zarr_url: Path or url to the individual OME-Zarr image to be processed.
             (standard argument for Fractal tasks, managed by Fractal server).
         output_table_name: Name of the output table.
-        label_name: Name of the label that contains the seeds.
+        input_label_name: Name of the label that contains the seeds.
             Needs to exist in OME-Zarr file.
         parent_label_names: Names of the parent labels to assign to.
-        level: Resolution of the label image to use for calculations.
+        pyramid_level: Resolution level of the label image to use for
+            calculations. Choose `0` for full resolution.
+            Only tested for 2D images at level 0.
         roi_table_name: Name of the ROI table to iterate over.
         append: If True, append new measurements to existing table.
         overwrite: Only used if append is False. If True, overwrite existing
             table. If False, raise error if table already exists.
     """
     omezarr = open_ome_zarr_container(zarr_url)
-    label_image = omezarr.get_label(label_name, path=level)
+    label_image = omezarr.get_label(input_label_name, path=pyramid_level)
     parent_label_images = {
-        name: omezarr.get_label(name, path=level) for name in parent_label_names
+        name: omezarr.get_label(name, path=pyramid_level) for name in parent_label_names
     }
 
     # find plate and well names
@@ -106,7 +108,7 @@ def measure_parent_label(
     if append:
         overwrite = True
 
-    feat_table = FeatureTable(df_measurements, reference_label=label_name)
+    feat_table = FeatureTable(df_measurements, reference_label=input_label_name)
     omezarr.add_table(output_table_name, feat_table, overwrite=overwrite)
 
 

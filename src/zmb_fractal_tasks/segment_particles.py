@@ -25,7 +25,7 @@ def segment_particles(
     # Fractal parameters
     zarr_url: str,
     # Core parameters
-    level: str = "0",
+    pyramid_level: str = "0",
     channel: NormalizedChannelInputModel,
     input_ROI_table: str = "FOV_ROI_table",
     output_ROI_table: Optional[str] = None,
@@ -53,8 +53,8 @@ def segment_particles(
     Args:
         zarr_url: Path or url to the individual OME-Zarr image to be processed.
             (standard argument for Fractal tasks, managed by Fractal server).
-        level: Pyramid level of the image to be segmented. Choose `0` to
-            process at full resolution.
+        pyramid_level: Pyramid level of the image to be segmented. Choose `0`
+            to process at full resolution.
         channel: Channel for segmentation; requires either `wavelength_id`
             (e.g. `A01_C01`) or `label` (e.g. `DAPI`), but not both.
             Also contains normalization options:
@@ -89,7 +89,7 @@ def segment_particles(
         overwrite: If `True`, overwrite the task output.
     """
     omezarr = open_ome_zarr_container(zarr_url)
-    image = omezarr.get_image(path=level)
+    image = omezarr.get_image(path=pyramid_level)
 
     roi_table = omezarr.get_table(input_ROI_table, check_type="roi_table")
 
@@ -109,7 +109,7 @@ def segment_particles(
     omezarr.derive_label(
         name=output_label_name, overwrite=overwrite, dtype='uint32'
     ) # TODO: maybe expose dtype, or figure out how to set dynamically as needed
-    label_image = omezarr.get_label(name=output_label_name, path=level)
+    label_image = omezarr.get_label(name=output_label_name, path=pyramid_level)
 
     max_label = 0
     for roi in roi_table.rois():

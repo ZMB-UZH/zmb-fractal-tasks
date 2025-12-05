@@ -10,17 +10,19 @@ from zmb_fractal_tasks.utils.normalization import (
 def test_segment_cellpose_simple(zarr_MIP_path):
     calculate_histograms(
         zarr_url=str(zarr_MIP_path / "B" / "03" / "0"),
-        level="2",
-        omero_percentiles=[1, 99],
+        pyramid_level="2",
+        update_display_range=True,
+        display_range_percentiles=[1, 99],
     )
     aggregate_plate_histograms(
         zarr_urls=[str(zarr_MIP_path / "B" / "03" / "0")],
         zarr_dir=str(zarr_MIP_path),
-        omero_percentiles=[1, 99],
+        update_display_range=True,
+        display_range_percentiles=[1, 99],
     )
     segment_cellpose_simple(
         zarr_url=str(zarr_MIP_path / "B" / "03" / "0"),
-        level="2",
+        pyramid_level="2",
         channel=NormalizedChannelInputModel(
             label="DAPI",
             normalize=CustomNormalizer(

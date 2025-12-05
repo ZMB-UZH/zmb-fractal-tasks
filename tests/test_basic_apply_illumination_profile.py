@@ -12,16 +12,16 @@ def test_basic_apply_illumination_profile(tmpdir, zarr_path):
         zarr_dir=str(tmpdir),
         illumination_profiles_folder=str(tmpdir / "illumination_profiles"),
         n_images=200,
-        overwrite=True,
+        overwrite_illumination_profiles=True,
         random_seed=11,
         basic_smoothness=1.0,
-        get_darkfield=True,
+        calculate_darkfield=True,
     )
     basic_apply_illumination_profile(
         zarr_url=str(zarr_path / "B" / "03" / "0"),
         illumination_profiles_folder=str(tmpdir / "illumination_profiles"),
         subtract_median_baseline=False,
-        create_new_well_sub_group=True,
-        new_well_sub_group_suffix="illumination_corrected",
+        overwrite_input_image=False,
+        new_well_subgroup_suffix="illumination_corrected",
     )
     # TODO: Check outputs

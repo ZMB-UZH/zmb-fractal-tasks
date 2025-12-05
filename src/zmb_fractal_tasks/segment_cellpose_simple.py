@@ -21,7 +21,7 @@ def segment_cellpose_simple(
     # Fractal parameters
     zarr_url: str,
     # Core parameters
-    level: str = "0",
+    pyramid_level: str = "0",
     channel: NormalizedChannelInputModel,
     input_ROI_table: str = "FOV_ROI_table",
     output_ROI_table: Optional[str] = None,
@@ -33,15 +33,15 @@ def segment_cellpose_simple(
     diameter: float = 30.0,
     resample: bool = False,
     # Overwrite option
-    overwrite: bool = True,
+    overwrite_existing_label: bool = True,
 ) -> None:
     """Segment a single channel using cellpose.
 
     Args:
         zarr_url: Path or url to the individual OME-Zarr image to be processed.
             (standard argument for Fractal tasks, managed by Fractal server).
-        level: Pyramid level of the image to be segmented. Choose `0` to
-            process at full resolution.
+        pyramid_level: Pyramid level of the image to be segmented. Choose `0`
+            to process at full resolution.
         channel: Channel for segmentation; requires either `wavelength_id`
             (e.g. `A01_C01`) or `label` (e.g. `DAPI`), but not both.
             Also contains normalization options:
@@ -69,10 +69,11 @@ def segment_cellpose_simple(
         diameter: Diameter of the objects to be segmented (pixels at level 0).
         resample: Run dynamics at original image size (will be slower but
             create more accurate boundaries).
-        overwrite: If `True`, overwrite the task output.
+        overwrite_existing_label: If `True`, overwrite the created labels, if
+            they already exist.
     """
     omezarr = open_ome_zarr_container(zarr_url)
-    image = omezarr.get_image(path=level)
+    image = omezarr.get_image(path=pyramid_level)
 
     if image.is_3d:
         raise ValueError("Only 2D images are supported")
@@ -97,8 +98,8 @@ def segment_cellpose_simple(
     if output_label_name is None:
         output_label_name = "cellpose"
 
-    omezarr.derive_label(name=output_label_name, overwrite=overwrite)
-    label_image = omezarr.get_label(name=output_label_name, path=level)
+    omezarr.derive_label(name=output_label_name, overwrite=overwrite_existing_label)
+    label_image = omezarr.get_label(name=output_label_name, path=pyramid_level)
 
     # load data
     cellpose_patches = []

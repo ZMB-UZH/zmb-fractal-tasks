@@ -17,9 +17,9 @@ def expand_segmentation(
     expansion_distance: int = 0,
     save_union: bool = True,
     union_output_label_name: Optional[str] = None,
-    save_diff: bool = True,
-    diff_output_label_name: Optional[str] = None,
-    overwrite: bool = True,
+    save_difference: bool = True,
+    difference_output_label_name: Optional[str] = None,
+    overwrite_existing_label: bool = True,
 ) -> None:
     """Expand the labels on the ROIs of a single OME-Zarr image.
 
@@ -38,12 +38,13 @@ def expand_segmentation(
         save_union: If `True`, save the union of the original and expanded
             labels. (corresponds to e.g. the intire cell)
         union_output_label_name: Name of the output label image for the union
-            (e.g. `"cells"`).
-        save_diff: If `True`, save the difference between the original and
-            expanded labels. (corresponds to e.g. the cytoplasm)
-        diff_output_label_name: Name of the output label image for the
-            difference (e.g. `"cytoplasms"`).
-        overwrite: If `True`, overwrite the task output.
+            (e.g. `cells`).
+        save_difference: If `True`, save the difference between the original
+            and expanded labels. (corresponds to e.g. the cytoplasm)
+        difference_output_label_name: Name of the output label image for the
+            difference (e.g. `cytoplasms`).
+        overwrite_existing_label: If `True`, overwrite the created labels, if
+            they already exist.
     """
     omezarr = open_ome_zarr_container(zarr_url)
     input_label_image = omezarr.get_label(name=input_label_name)
@@ -53,13 +54,13 @@ def expand_segmentation(
     if save_union:
         output_label_image_union = omezarr.derive_label(
             name=union_output_label_name,
-            overwrite=overwrite,
+            overwrite=overwrite_existing_label,
             dtype=input_label_image.dtype,
         )
-    if save_diff:
+    if save_difference:
         output_label_image_diff = omezarr.derive_label(
-            name=diff_output_label_name,
-            overwrite=overwrite,
+            name=difference_output_label_name,
+            overwrite=overwrite_existing_label,
             dtype=input_label_image.dtype,
         )
 
@@ -70,7 +71,7 @@ def expand_segmentation(
             output_label_image_union.set_roi(
                 patch=segmentation, roi=roi, axes_order="zyx"
             )
-        if save_diff:
+        if save_difference:
             output_label_image_diff.set_roi(
                 patch=segmentation - patch, roi=roi, axes_order="zyx"
             )
@@ -78,7 +79,7 @@ def expand_segmentation(
     # Consolidate the segmentation image
     if save_union:
         output_label_image_union.consolidate()
-    if save_diff:
+    if save_difference:
         output_label_image_diff.consolidate()
 
     # TODO: Add ROI table with bounding boxes of the labels
