@@ -20,6 +20,7 @@ def calculate_histograms(
     update_display_range: bool = True,
     display_range_percentiles: Sequence[float] = (0.5, 99.5),
     histogram_name: str = "channel_histograms",
+    overwrite: bool = True,
 ) -> None:
     """Calculate channel histograms of image.
 
@@ -37,6 +38,7 @@ def calculate_histograms(
             for display range calculation. (Only used if update_display_range
             is True).
         histogram_name: Name of the output histogram table.
+        overwrite: If True, overwrite existing histogram table.
     """
     omezarr = open_ome_zarr_container(zarr_url)
 
@@ -58,7 +60,7 @@ def calculate_histograms(
     adata = histograms_to_anndata(channel_histos)
     adata.uns["pyramid_level"] = pyramid_level
     generic_table = GenericTable(table_data=adata)
-    omezarr.add_table(histogram_name, generic_table)
+    omezarr.add_table(histogram_name, generic_table, overwrite=overwrite)
 
     if update_display_range:
         if len(display_range_percentiles) != 2:

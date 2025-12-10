@@ -26,6 +26,7 @@ def aggregate_plate_histograms(
     histogram_output_name: str = "channel_histograms_plate",
     update_display_range: bool = True,
     display_range_percentiles: Sequence[float] = (0.5, 99.5),
+    overwrite: bool = True,
 ) -> None:
     """Find all channel histograms in a plate and combine them.
 
@@ -45,6 +46,7 @@ def aggregate_plate_histograms(
         display_range_percentiles: Percentiles (e.g. [0.5, 99.5]) to use
             for display range calculation. (Only used if update_display_range
             is True).
+        overwrite: If True, overwrite existing histogram table.
     """
     # identify plates
     plate_to_urls = {}
@@ -85,7 +87,7 @@ def aggregate_plate_histograms(
         generic_table = GenericTable(table_data=adata)
         for zarr_url in plate_zarr_urls:
             omezarr = open_ome_zarr_container(zarr_url)
-            omezarr.add_table(histogram_output_name, generic_table)
+            omezarr.add_table(histogram_output_name, generic_table, overwrite=overwrite)
 
         # calculate percentiles & write omero metadata
         if update_display_range:
