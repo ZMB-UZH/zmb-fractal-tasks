@@ -143,13 +143,29 @@ def measure_shortest_distance_ROI(
     if optional_columns is None:
         optional_columns = {}
 
+    # Set default prefix list
+    if target_prefix_list is None:
+        target_prefix_list = [f"dist{i}" for i in range(len(target_label_list))]
+
+    # Check if labels are empty (all zeros)
+    unique_labels = np.unique(labels)[np.unique(labels) != 0]
+    is_empty = len(unique_labels) == 0
+
+    if is_empty:
+        # Create empty dataframe with all expected columns
+        columns = list(optional_columns.keys()) + [
+            f"shortest_distance_to_{target_prefix}"
+            for target_prefix in target_prefix_list
+        ]
+        df = pd.DataFrame(columns=columns)
+        df.index.name = "label"
+        return df
+
     # initiate dataframe
-    df = pd.DataFrame(index=np.unique(labels)[np.unique(labels) != 0])
+    df = pd.DataFrame(index=unique_labels)
     df.index.name = "label"
 
     # calculated shortest distances
-    if target_prefix_list is None:
-        target_prefix_list = [f"dist{i}" for i in range(len(target_label_list))]
     df_dist_list = []
     for target_label, target_prefix in zip(
         target_label_list, target_prefix_list, strict=True

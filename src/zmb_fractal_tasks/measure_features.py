@@ -191,13 +191,32 @@ def measure_features_ROI(
     if optional_columns is None:
         optional_columns = {}
 
+    # Set default properties
+    if structure_props is None:
+        structure_props = ["num_pixels", "area"]
+    if int_prefix_list is None:
+        int_prefix_list = [f"c{i}" for i in range(len(intensities_list))]
+    if intensity_props is None:
+        intensity_props = ["intensity_mean", "intensity_std", "intensity_total"]
+
+    # Check if labels are empty (all zeros)
+    unique_labels = np.unique(labels)[np.unique(labels) != 0]
+    is_empty = len(unique_labels) == 0
+
+    if is_empty:
+        # Create empty dataframe with all expected columns
+        columns = list(optional_columns.keys()) + structure_props
+        for int_prefix in int_prefix_list:
+            columns.extend([f"{int_prefix}_{prop}" for prop in intensity_props])
+        df = pd.DataFrame(columns=columns)
+        df.index.name = "label"
+        return df
+
     # initiate dataframe
-    df = pd.DataFrame(index=np.unique(labels)[np.unique(labels) != 0])
+    df = pd.DataFrame(index=unique_labels)
     df.index.name = "label"
 
     # do structure measurements
-    if structure_props is None:
-        structure_props = ["num_pixels", "area"]
     df_struct = pd.DataFrame(
         regionprops_table_plus(
             labels,
@@ -209,10 +228,6 @@ def measure_features_ROI(
     df_struct.set_index("label", inplace=True)
 
     # do intensity measurements
-    if int_prefix_list is None:
-        int_prefix_list = [f"c{i}" for i in range(len(intensities_list))]
-    if intensity_props is None:
-        intensity_props = ["intensity_mean", "intensity_std", "intensity_total"]
     df_int_list = []
     for intensities, int_prefix in zip(intensities_list, int_prefix_list, strict=True):
         df_int = pd.DataFrame(

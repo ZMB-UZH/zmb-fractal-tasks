@@ -134,13 +134,28 @@ def measure_parents_ROI(
     if optional_columns is None:
         optional_columns = {}
 
+    # Set default prefix list
+    if parent_prefix_list is None:
+        parent_prefix_list = [f"parent{i}" for i in range(len(parent_label_list))]
+
+    # Check if labels are empty (all zeros)
+    unique_labels = np.unique(labels)[np.unique(labels) != 0]
+    is_empty = len(unique_labels) == 0
+
+    if is_empty:
+        # Create empty dataframe with all expected columns
+        columns = list(optional_columns.keys()) + [
+            f"{parent_prefix}_ID" for parent_prefix in parent_prefix_list
+        ]
+        df = pd.DataFrame(columns=columns)
+        df.index.name = "label"
+        return df
+
     # initiate dataframe
-    df = pd.DataFrame(index=np.unique(labels)[np.unique(labels) != 0])
+    df = pd.DataFrame(index=unique_labels)
     df.index.name = "label"
 
     # assign labels to parent-labels
-    if parent_prefix_list is None:
-        parent_prefix_list = [f"parent{i}" for i in range(len(parent_label_list))]
     df_parent_list = []
     for parent_labels, parent_prefix in zip(
         parent_label_list, parent_prefix_list, strict=True
