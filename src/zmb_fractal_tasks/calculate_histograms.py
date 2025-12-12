@@ -44,7 +44,7 @@ def calculate_histograms(
 
     image = omezarr.get_image(path=pyramid_level)
 
-    roi_table = omezarr.get_table(input_ROI_table, check_type="roi_table")
+    roi_table = omezarr.get_table(input_ROI_table)
 
     channels = image.channel_labels
 

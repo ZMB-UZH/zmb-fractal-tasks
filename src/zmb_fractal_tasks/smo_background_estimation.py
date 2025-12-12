@@ -40,7 +40,7 @@ def smo_background_estimation(
     """
     omezarr = open_ome_zarr_container(zarr_url)
     source_image = omezarr.get_image()
-    roi_table = omezarr.get_table("FOV_ROI_table", check_type="roi_table")
+    roi_table = omezarr.get_table("FOV_ROI_table")
 
     # TODO: handle case where no channel names are available?
     channels = source_image.channel_labels

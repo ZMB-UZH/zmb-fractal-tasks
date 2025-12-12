@@ -48,7 +48,7 @@ def basic_apply_illumination_profile(
     source_image = omezarr.get_image()
     output_image = output_omezarr.get_image()
 
-    roi_table = omezarr.get_table("FOV_ROI_table", check_type="roi_table")
+    roi_table = omezarr.get_table("FOV_ROI_table")
 
     # TODO: handle case where no channel names are available?
     channels = source_image.channel_labels

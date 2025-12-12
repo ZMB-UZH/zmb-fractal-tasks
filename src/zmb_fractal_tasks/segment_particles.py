@@ -91,7 +91,7 @@ def segment_particles(
     omezarr = open_ome_zarr_container(zarr_url)
     image = omezarr.get_image(path=pyramid_level)
 
-    roi_table = omezarr.get_table(input_ROI_table, check_type="roi_table")
+    roi_table = omezarr.get_table(input_ROI_table)
 
     omero_channel = channel.get_omero_channel(zarr_url)
     channel_idx = image.channel_labels.index(omero_channel.label)

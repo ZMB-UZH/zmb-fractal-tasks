@@ -77,7 +77,7 @@ def measure_features(
 
     logging.info(f"Calculating {output_table_name} for well {well_name}")
 
-    roi_table = omezarr.get_table(roi_table_name, check_type="roi_table")
+    roi_table = omezarr.get_table(roi_table_name)
 
     measurements = []
     for roi in roi_table.rois():
@@ -139,9 +139,7 @@ def measure_features(
     df_measurements = pd.concat(measurements, axis=0)
 
     if append and (output_table_name in omezarr.list_tables()):
-        feat_table_org = omezarr.get_table(
-            output_table_name, check_type="feature_table"
-        )
+        feat_table_org = omezarr.get_table(output_table_name)
         df_org = feat_table_org.dataframe
         # Ensure same index (labels) to avoid misalignment
         if not df_org.index.equals(df_measurements.index):

@@ -37,7 +37,7 @@ def update_display_range(
 
     image = omezarr.get_image(path=pyramid_level)
 
-    roi_table = omezarr.get_table("FOV_ROI_table", check_type="roi_table")
+    roi_table = omezarr.get_table("FOV_ROI_table")
 
     # TODO: handle case where no channel names are available?
     channels = image.channel_labels

@@ -80,7 +80,7 @@ def segment_cellpose_simple(
     if image.is_time_series:
         raise ValueError("Time series are not supported")
 
-    roi_table = omezarr.get_table(input_ROI_table, check_type="roi_table")
+    roi_table = omezarr.get_table(input_ROI_table)
 
     omero_channel = channel.get_omero_channel(zarr_url)
     channel_idx = image.channel_labels.index(omero_channel.label)
