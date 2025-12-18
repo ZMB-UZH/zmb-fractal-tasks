@@ -49,6 +49,13 @@ TASK_LIST = [
         tags=["Percentiles", "Histogram", "Normalization"],
     ),
     ParallelTask(
+        name="Delete labels from OME-Zarr image",
+        executable="delete_labels.py",
+        meta={"cpus_per_task": 1, "mem": 500},
+        category="Utility",
+        tags=["Labels", "Delete"],
+    ),
+    ParallelTask(
         name="Update display range",
         executable="update_display_range.py",
         meta={"cpus_per_task": 1, "mem": 4000},

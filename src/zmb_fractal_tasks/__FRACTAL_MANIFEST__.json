@@ -332,6 +332,45 @@
       "docs_info": "## calculate_histograms\nCalculate channel histograms of image.\n"
     },
     {
+      "name": "Delete labels from OME-Zarr image",
+      "category": "Utility",
+      "tags": [
+        "Labels",
+        "Delete"
+      ],
+      "type": "parallel",
+      "executable_parallel": "delete_labels.py",
+      "meta_parallel": {
+        "cpus_per_task": 1,
+        "mem": 500
+      },
+      "args_schema_parallel": {
+        "additionalProperties": false,
+        "properties": {
+          "zarr_url": {
+            "title": "Zarr Url",
+            "type": "string",
+            "description": "Absolute path to the OME-Zarr image. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "labels_to_delete": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Labels To Delete",
+            "type": "array",
+            "description": "List of labels to delete from the image."
+          }
+        },
+        "required": [
+          "zarr_url",
+          "labels_to_delete"
+        ],
+        "type": "object",
+        "title": "DeleteLabels"
+      },
+      "docs_info": "## delete_labels\nDelete labels from an OME-Zarr image.\n"
+    },
+    {
       "name": "Update display range",
       "category": "Measurement",
       "tags": [
