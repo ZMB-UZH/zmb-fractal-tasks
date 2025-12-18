@@ -10,6 +10,13 @@ DOCS_LINK = None
 INPUT_MODELS = []
 
 TASK_LIST = [
+    ParallelTask(
+        name="Add type to image list",
+        executable="add_type.py",
+        meta={"cpus_per_task": 1, "mem": 100},
+        category="Utility",
+        tags=["Utility", "Type", "Types", "Image List"],
+    ),
     NonParallelTask(
         name="Aggregate all channel histograms for plate",
         executable="aggregate_plate_histograms.py",

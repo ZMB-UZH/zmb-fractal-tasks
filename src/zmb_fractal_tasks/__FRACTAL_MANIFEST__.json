@@ -2,6 +2,47 @@
   "manifest_version": "2",
   "task_list": [
     {
+      "name": "Add type to image list",
+      "category": "Utility",
+      "tags": [
+        "Utility",
+        "Type",
+        "Types",
+        "Image List"
+      ],
+      "type": "parallel",
+      "executable_parallel": "add_type.py",
+      "meta_parallel": {
+        "cpus_per_task": 1,
+        "mem": 100
+      },
+      "args_schema_parallel": {
+        "additionalProperties": false,
+        "properties": {
+          "zarr_url": {
+            "title": "Zarr Url",
+            "type": "string",
+            "description": "Absolute path to the OME-Zarr image. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "output_types": {
+            "additionalProperties": {
+              "type": "boolean"
+            },
+            "title": "Output Types",
+            "type": "object",
+            "description": "Dictionary where keys are the types to add and values are booleans indicating wheter the type is set to True or False."
+          }
+        },
+        "required": [
+          "zarr_url",
+          "output_types"
+        ],
+        "type": "object",
+        "title": "AddType"
+      },
+      "docs_info": "## add_type\nAdd an arbitrary type to each selected image in an image list.\n"
+    },
+    {
       "name": "Aggregate all channel histograms for plate",
       "category": "Measurement",
       "tags": [
@@ -60,6 +101,12 @@
             "title": "Display Range Percentiles",
             "type": "array",
             "description": "Percentiles (e.g. [0.5, 99.5]) to use for display range calculation. (Only used if update_display_range is True)."
+          },
+          "overwrite": {
+            "default": true,
+            "title": "Overwrite",
+            "type": "boolean",
+            "description": "If True, overwrite existing histogram table."
           }
         },
         "required": [
@@ -268,6 +315,12 @@
             "title": "Histogram Name",
             "type": "string",
             "description": "Name of the output histogram table."
+          },
+          "overwrite": {
+            "default": true,
+            "title": "Overwrite",
+            "type": "boolean",
+            "description": "If True, overwrite existing histogram table."
           }
         },
         "required": [
