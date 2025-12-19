@@ -20,7 +20,8 @@ def delete_labels(
     Args:
         zarr_url: Absolute path to the OME-Zarr image.
             (standard argument for Fractal tasks, managed by Fractal server).
-        labels_to_delete: List of labels to delete from the image.
+        labels_to_delete: Add names of labels to delete. If left empty, all
+            labels will be deleted.
     """
     # Load image group
     image_group = zarr.group(zarr_url)
@@ -32,10 +33,14 @@ def delete_labels(
     labels_group = image_group["labels"]
     label_names = labels_group.attrs.asdict().get("labels", [])
 
-    # Check if all labels to delete exist
-    for label_name in labels_to_delete:
-        if label_name not in label_names:
-            raise ValueError(f"Label {label_name} not found in {zarr_url}.")
+    # If labels_to_delete is empty, delete all labels
+    if not labels_to_delete:
+        labels_to_delete = label_names.copy()
+    else:
+        # Check if all labels to delete exist
+        for label_name in labels_to_delete:
+            if label_name not in label_names:
+                raise ValueError(f"Label {label_name} not found in {zarr_url}.")
 
     # Remove labels from metadata
     updated_label_names = [

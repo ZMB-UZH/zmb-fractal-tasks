@@ -352,7 +352,7 @@
             },
             "title": "Labels To Delete",
             "type": "array",
-            "description": "List of labels to delete from the image."
+            "description": "Add names of labels to delete. If left empty, all labels will be deleted."
           }
         },
         "required": [

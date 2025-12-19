@@ -73,6 +73,39 @@ def test_delete_multiple_labels(zarr_MIP_path, tmp_path):
     assert len(remaining_labels) == len(initial_labels) - len(labels_to_delete)
 
 
+def test_delete_all_labels(zarr_MIP_path, tmp_path):
+    """Test deleting all labels when labels_to_delete is empty."""
+    # Create a copy of the zarr
+    test_zarr = tmp_path / "test_zarr_all.zarr"
+    shutil.copytree(zarr_MIP_path, test_zarr, dirs_exist_ok=True)
+    
+    zarr_url = str(test_zarr / "B" / "03" / "0")
+    
+    # Check initial state
+    image_group = zarr.group(zarr_url)
+    labels_group = image_group["labels"]
+    initial_labels = labels_group.attrs.asdict().get("labels", [])
+    
+    # Ensure we have at least one label
+    assert len(initial_labels) > 0, "Test requires at least one label in the fixture"
+    
+    # Delete all labels by passing empty list
+    delete_labels(
+        zarr_url=zarr_url,
+        labels_to_delete=[],
+    )
+    
+    # Verify all labels were removed from metadata
+    labels_group = zarr.group(zarr_url)["labels"]
+    remaining_labels = labels_group.attrs.asdict().get("labels", [])
+    assert len(remaining_labels) == 0
+    
+    # Verify all label directories were deleted
+    for label in initial_labels:
+        label_path = Path(zarr_url) / "labels" / label
+        assert not label_path.exists()
+
+
 def test_delete_nonexistent_label(zarr_MIP_path, tmp_path):
     """Test that deleting a non-existent label raises an error."""
     # Create a copy of the zarr
