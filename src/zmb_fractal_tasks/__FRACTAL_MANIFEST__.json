@@ -11,7 +11,8 @@
         "Utility",
         "Type",
         "Types",
-        "Image List"
+        "Image List",
+        "Mark"
       ],
       "type": "parallel",
       "executable_parallel": "do_nothing.py",
@@ -113,7 +114,7 @@
       "docs_info": "## aggregate_plate_histograms\nFind all channel histograms in a plate and combine them.\n\nIn each image, a new table is created with the combined histograms.\nThe new table is named as the input histogram table with suffix \"_plate\".\n"
     },
     {
-      "name": "BaSiC: Apply illumination profile",
+      "name": "BaSiC: Calculate and apply illumination correction for plate",
       "input_types": {
         "illumination_corrected": false
       },
@@ -125,67 +126,170 @@
         "Illumination correction",
         "BaSiC"
       ],
-      "type": "parallel",
+      "type": "compound",
+      "executable_non_parallel": "basic_correct_illumination_plate_init.py",
       "executable_parallel": "basic_apply_illumination_profile.py",
-      "meta_parallel": {
+      "meta_non_parallel": {
         "cpus_per_task": 8,
         "mem": 32000
       },
-      "args_schema_parallel": {
-        "additionalProperties": false,
-        "properties": {
-          "zarr_url": {
-            "title": "Zarr Url",
-            "type": "string",
-            "description": "Absolute path to the OME-Zarr image. (standard argument for Fractal tasks, managed by Fractal server)."
-          },
-          "illumination_profiles_folder": {
-            "title": "Illumination Profiles Folder",
-            "type": "string",
-            "description": "Path of folder of illumination profiles."
-          },
-          "subtract_median_baseline": {
-            "default": false,
-            "title": "Subtract Median Baseline",
-            "type": "boolean",
-            "description": "If True, subtract the median of all baseline values from the corrected image."
-          },
-          "overwrite_input_image": {
-            "default": true,
-            "title": "Overwrite Input Image",
-            "type": "boolean",
-            "description": "If True, overwrite the input image. If False, create a new well sub-group to store the corrected image."
-          },
-          "new_well_subgroup_suffix": {
-            "default": "illumination_corrected",
-            "title": "New Well Subgroup Suffix",
-            "type": "string",
-            "description": "Suffix to add to the new well sub-group name. Only used if overwrite_input_image is False."
-          }
-        },
-        "required": [
-          "zarr_url",
-          "illumination_profiles_folder"
-        ],
-        "type": "object",
-        "title": "BasicApplyIlluminationProfile"
-      },
-      "docs_info": "## basic_apply_illumination_profile\nApplies illumination correction to the OME-Zarr.\n"
-    },
-    {
-      "name": "BaSiC: Calculate illumination profile for plate",
-      "category": "Image Processing",
-      "tags": [
-        "Illumination correction",
-        "BaSiC"
-      ],
-      "type": "non_parallel",
-      "executable_non_parallel": "basic_calculate_illumination_profile_plate.py",
-      "meta_non_parallel": {
+      "meta_parallel": {
         "cpus_per_task": 1,
         "mem": 4000
       },
       "args_schema_non_parallel": {
+        "$defs": {
+          "AdvancedBaSiCParameters": {
+            "description": "Advanced Parameters for BaSiC",
+            "properties": {
+              "autosegment": {
+                "default": false,
+                "title": "Autosegment",
+                "type": "boolean"
+              },
+              "autosegment_margin": {
+                "default": 10,
+                "title": "Autosegment Margin",
+                "type": "integer"
+              },
+              "epsilon": {
+                "default": 0.1,
+                "title": "Epsilon",
+                "type": "number"
+              },
+              "max_iterations": {
+                "default": 500,
+                "title": "Max Iterations",
+                "type": "integer"
+              },
+              "max_mu_coef": {
+                "default": 10000000.0,
+                "title": "Max Mu Coef",
+                "type": "number"
+              },
+              "max_reweight_iterations": {
+                "default": 10,
+                "title": "Max Reweight Iterations",
+                "type": "integer"
+              },
+              "max_reweight_iterations_baseline": {
+                "default": 5,
+                "title": "Max Reweight Iterations Baseline",
+                "type": "integer"
+              },
+              "max_workers": {
+                "default": 8,
+                "title": "Max Workers",
+                "type": "integer"
+              },
+              "mu_coef": {
+                "default": 12.5,
+                "title": "Mu Coef",
+                "type": "number"
+              },
+              "optimization_tol": {
+                "default": 0.001,
+                "title": "Optimization Tol",
+                "type": "number"
+              },
+              "optimization_tol_diff": {
+                "default": 0.01,
+                "title": "Optimization Tol Diff",
+                "type": "number"
+              },
+              "reweighting_tol": {
+                "default": 0.01,
+                "title": "Reweighting Tol",
+                "type": "number"
+              },
+              "rho": {
+                "default": 1.5,
+                "title": "Rho",
+                "type": "number"
+              },
+              "sort_intensity": {
+                "default": false,
+                "title": "Sort Intensity",
+                "type": "boolean"
+              },
+              "sparse_cost_darkfield": {
+                "default": 0.01,
+                "title": "Sparse Cost Darkfield",
+                "type": "number"
+              },
+              "working_size": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "items": {
+                      "type": "integer"
+                    },
+                    "type": "array"
+                  }
+                ],
+                "default": 128,
+                "title": "Working Size"
+              }
+            },
+            "title": "AdvancedBaSiCParameters",
+            "type": "object"
+          },
+          "AdvancedCorrectionParameters": {
+            "description": "Parameters for applying illumination correction",
+            "properties": {
+              "overwrite_input_image": {
+                "default": true,
+                "title": "Overwrite Input Image",
+                "type": "boolean"
+              },
+              "new_well_subgroup_suffix": {
+                "default": "illumination_corrected",
+                "title": "New Well Subgroup Suffix",
+                "type": "string"
+              },
+              "subtract_median_baseline": {
+                "default": false,
+                "title": "Subtract Median Baseline",
+                "type": "boolean"
+              }
+            },
+            "title": "AdvancedCorrectionParameters",
+            "type": "object"
+          },
+          "CoreBaSiCParameters": {
+            "description": "Core Parameters for BaSiC calculation",
+            "properties": {
+              "n_images_sampled": {
+                "default": 256,
+                "title": "N Images Sampled",
+                "type": "integer"
+              },
+              "get_darkfield": {
+                "default": false,
+                "title": "Get Darkfield",
+                "type": "boolean"
+              },
+              "smoothness_flatfield": {
+                "default": 1.0,
+                "title": "Smoothness Flatfield",
+                "type": "number"
+              },
+              "smoothness_darkfield": {
+                "default": 1.0,
+                "title": "Smoothness Darkfield",
+                "type": "number"
+              },
+              "random_seed": {
+                "title": "Random Seed",
+                "type": "integer"
+              }
+            },
+            "title": "CoreBaSiCParameters",
+            "type": "object"
+          }
+        },
         "additionalProperties": false,
         "properties": {
           "zarr_urls": {
@@ -199,52 +303,126 @@
           "zarr_dir": {
             "title": "Zarr Dir",
             "type": "string",
-            "description": "Not used for this task. (Standard argument for Fractal tasks, managed by Fractal server)."
+            "description": "Profiles will be saved in {zarr_dir}/{illumination_profiles_folder_name} (Standard argument for Fractal tasks, managed by Fractal server)."
           },
-          "illumination_profiles_folder": {
-            "title": "Illumination Profiles Folder",
+          "illumination_profiles_folder_name": {
+            "default": "BaSiC_illumination_profiles",
+            "title": "Illumination Profiles Folder Name",
             "type": "string",
-            "description": "Path to folder where illumination profiles will be saved."
-          },
-          "n_images": {
-            "default": 128,
-            "title": "N Images",
-            "type": "integer",
-            "description": "Number of images to sample for illumination correction."
+            "description": "Name of folder to save illumination profiles in. The folder will be created inside zarr_dir."
           },
           "overwrite_illumination_profiles": {
-            "default": false,
+            "default": true,
             "title": "Overwrite Illumination Profiles",
             "type": "boolean",
-            "description": "If True, overwrite existing illumination profiles."
+            "description": "If True, overwrite existing illumination profiles of the same name. If False, an error is raised if illumination profiles already exist."
           },
-          "random_seed": {
-            "title": "Random Seed",
-            "type": "integer",
-            "description": "integer random seed to initialize random number generator. None will result in non-reproducibel outputs."
+          "core_basic_parameters": {
+            "$ref": "#/$defs/CoreBaSiCParameters",
+            "default": {
+              "n_images_sampled": 256,
+              "get_darkfield": false,
+              "smoothness_flatfield": 1.0,
+              "smoothness_darkfield": 1.0,
+              "random_seed": null
+            },
+            "title": "Core Basic Parameters",
+            "description": "Core parameters for BaSiC illumination correction."
           },
-          "basic_smoothness": {
-            "default": 1,
-            "title": "Basic Smoothness",
-            "type": "number",
-            "description": "Smoothing parameter for BaSiC (used for both flat- and dark-field)."
+          "advanced_basic_parameters": {
+            "$ref": "#/$defs/AdvancedBaSiCParameters",
+            "default": {
+              "autosegment": false,
+              "autosegment_margin": 10,
+              "epsilon": 0.1,
+              "max_iterations": 500,
+              "max_mu_coef": 10000000.0,
+              "max_reweight_iterations": 10,
+              "max_reweight_iterations_baseline": 5,
+              "max_workers": 8,
+              "mu_coef": 12.5,
+              "optimization_tol": 0.001,
+              "optimization_tol_diff": 0.01,
+              "reweighting_tol": 0.01,
+              "rho": 1.5,
+              "sort_intensity": false,
+              "sparse_cost_darkfield": 0.01,
+              "working_size": 128
+            },
+            "title": "Advanced Basic Parameters",
+            "description": "Advanced parameters for BaSiC illumination correction. See https://basicpy.readthedocs.io/en/latest/api.html"
           },
-          "calculate_darkfield": {
-            "default": true,
-            "title": "Calculate Darkfield",
-            "type": "boolean",
-            "description": "If True, also calculate darkfield correction."
+          "advanced_correction_parameters": {
+            "$ref": "#/$defs/AdvancedCorrectionParameters",
+            "default": {
+              "overwrite_input_image": true,
+              "new_well_subgroup_suffix": "illumination_corrected",
+              "subtract_median_baseline": false
+            },
+            "title": "Advanced Correction Parameters",
+            "description": "Parameters for applying illumination correction."
           }
         },
         "required": [
           "zarr_urls",
-          "zarr_dir",
-          "illumination_profiles_folder"
+          "zarr_dir"
         ],
         "type": "object",
-        "title": "BasicCalculateIlluminationProfilePlate"
+        "title": "BasicCorrectIlluminationPlateInit"
       },
-      "docs_info": "## basic_calculate_illumination_profile_plate\nCalculate illumination profiles for all channels in a plate using BaSiC.\n\nCalculates illumination correction profiles based on a random sample\nof FOVs for each channel.\nNOTE: This assumes that all FOVs in the plate have the same dimensions.\n"
+      "args_schema_parallel": {
+        "$defs": {
+          "InitArgsBaSiCApply": {
+            "description": "Init Args for basic_apply_illumination_profile task.",
+            "properties": {
+              "illumination_profiles_folder": {
+                "title": "Illumination Profiles Folder",
+                "type": "string"
+              },
+              "subtract_median_baseline": {
+                "default": false,
+                "title": "Subtract Median Baseline",
+                "type": "boolean"
+              },
+              "overwrite_input_image": {
+                "default": true,
+                "title": "Overwrite Input Image",
+                "type": "boolean"
+              },
+              "new_well_subgroup_suffix": {
+                "default": "illumination_corrected",
+                "title": "New Well Subgroup Suffix",
+                "type": "string"
+              }
+            },
+            "required": [
+              "illumination_profiles_folder"
+            ],
+            "title": "InitArgsBaSiCApply",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "zarr_url": {
+            "title": "Zarr Url",
+            "type": "string",
+            "description": "Absolute path to the OME-Zarr image. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "init_args": {
+            "$ref": "#/$defs/InitArgsBaSiCApply",
+            "title": "Init Args",
+            "description": "Initialization arguments from the init task."
+          }
+        },
+        "required": [
+          "zarr_url",
+          "init_args"
+        ],
+        "type": "object",
+        "title": "BasicApplyIlluminationProfile"
+      },
+      "docs_info": "## basic_correct_illumination_plate_init\nCalculate illumination profiles for all channels in a plate using BaSiC.\n\nSee https://basicpy.readthedocs.io for more information on BaSiC.\nThis task calculates illumination correction profiles based on a random\nsample of FOVs for each channel.\nNOTE: This assumes that all FOVs in the plate have the same dimensions.\n\nThe calculated illumination profiles are saved in the specified folder,\nand can be applied to images using the 'Basic: Apply illumination profile'\ntask.\n## basic_apply_illumination_profile\nApplies illumination correction to the OME-Zarr.\n\nUses illumination profiles calculated using the 'BaSiC: Calculate\nillumination profile for plate' task.\n"
     },
     {
       "name": "Calculate channel-histograms for each image",

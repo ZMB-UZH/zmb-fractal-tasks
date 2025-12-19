@@ -1,6 +1,7 @@
 """Contains the list of tasks available to fractal."""
 
 from fractal_task_tools.task_models import (
+    CompoundTask,
     NonParallelTask,
     ParallelTask,
 )
@@ -25,19 +26,13 @@ TASK_LIST = [
         category="Measurement",
         tags=["Percentiles", "Histogram", "Normalization"],
     ),
-    ParallelTask(
-        name="BaSiC: Apply illumination profile",
+    CompoundTask(
+        name="BaSiC: Calculate and apply illumination correction for plate",
         input_types={"illumination_corrected": False},
+        executable_init="basic_correct_illumination_plate_init.py",
         executable="basic_apply_illumination_profile.py",
         output_types={"illumination_corrected": True},
-        meta={"cpus_per_task": 8, "mem": 32000},
-        category="Image Processing",
-        tags=["Illumination correction", "BaSiC"],
-        # docs_info="file:docs_info/thresholding_task.md",
-    ),
-    NonParallelTask(
-        name="BaSiC: Calculate illumination profile for plate",
-        executable="basic_calculate_illumination_profile_plate.py",
+        meta_init={"cpus_per_task": 8, "mem": 32000},
         meta={"cpus_per_task": 1, "mem": 4000},
         category="Image Processing",
         tags=["Illumination correction", "BaSiC"],

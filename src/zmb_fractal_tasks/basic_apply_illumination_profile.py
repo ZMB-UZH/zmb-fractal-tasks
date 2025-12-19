@@ -6,24 +6,16 @@ from typing import Any
 
 import numpy as np
 from ngio import open_ome_zarr_container
-from pydantic import validate_call
+from pydantic import BaseModel, validate_call
 
 
-@validate_call
-def basic_apply_illumination_profile(
-    *,
-    zarr_url: str,
-    illumination_profiles_folder: str,
-    subtract_median_baseline: bool = False,
-    overwrite_input_image: bool = True,
-    new_well_subgroup_suffix: str = "illumination_corrected",
-) -> dict[str, Any]:
-    """Applies illumination correction to the OME-Zarr.
+class InitArgsBaSiCApply(BaseModel):
+    """Init Args for basic_apply_illumination_profile task.
 
-    Args:
-        zarr_url: Absolute path to the OME-Zarr image.
-            (standard argument for Fractal tasks, managed by Fractal server).
+    Attributes:
         illumination_profiles_folder: Path of folder of illumination profiles.
+            If left empty, looks for illumination profiles in
+            zarr_dir/basic_illumination_profiles.
         subtract_median_baseline: If True, subtract the median of all baseline
             values from the corrected image.
         overwrite_input_image: If True, overwrite the input image. If False,
@@ -31,13 +23,35 @@ def basic_apply_illumination_profile(
         new_well_subgroup_suffix: Suffix to add to the new well sub-group
             name. Only used if overwrite_input_image is False.
     """
+    illumination_profiles_folder: str
+    subtract_median_baseline: bool = False
+    overwrite_input_image: bool = True
+    new_well_subgroup_suffix: str = "illumination_corrected"
+
+@validate_call
+def basic_apply_illumination_profile(
+    *,
+    zarr_url: str,
+    init_args: InitArgsBaSiCApply,
+
+) -> dict[str, Any]:
+    """Applies illumination correction to the OME-Zarr.
+
+    Uses illumination profiles calculated using the 'BaSiC: Calculate
+    illumination profile for plate' task.
+
+    Args:
+        zarr_url: Absolute path to the OME-Zarr image.
+            (standard argument for Fractal tasks, managed by Fractal server).
+        init_args: Initialization arguments from the init task.
+    """
     omezarr = open_ome_zarr_container(zarr_url)
 
-    if overwrite_input_image:
+    if init_args.overwrite_input_image:
         output_omezarr = omezarr
     else:
         new_zarr_url = Path(zarr_url).parent / (
-            Path(zarr_url).stem + "_" + new_well_subgroup_suffix
+            Path(zarr_url).stem + "_" + init_args.new_well_subgroup_suffix
         )
         output_omezarr = omezarr.derive_image(new_zarr_url, overwrite=True)
         # copy all tables
@@ -57,10 +71,10 @@ def basic_apply_illumination_profile(
     for channel in channels:
         # load illumination profiles
         channel_idx = source_image.channel_labels.index(channel)
-        folder_path = Path(illumination_profiles_folder) / channel
+        folder_path = Path(init_args.illumination_profiles_folder) / channel
         flatfield = np.load(folder_path / "flatfield.npy")
         darkfield = np.load(folder_path / "darkfield.npy")
-        if subtract_median_baseline:
+        if init_args.subtract_median_baseline:
             baseline_array = np.load(folder_path / "baseline.npy")
             baseline = int(np.median(baseline_array))
         else:
@@ -80,7 +94,7 @@ def basic_apply_illumination_profile(
 
     output_image.consolidate()
 
-    if overwrite_input_image:
+    if init_args.overwrite_input_image:
         image_list_updates = {"image_list_updates": [{"zarr_url": zarr_url}]}
     else:
         image_list_updates = {
