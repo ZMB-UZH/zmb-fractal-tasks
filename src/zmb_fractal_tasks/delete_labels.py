@@ -7,6 +7,7 @@ from typing import Any
 import zarr
 from pydantic import validate_call
 
+
 # TODO: handle using ngio when support is added
 @validate_call
 def delete_labels(
@@ -27,7 +28,7 @@ def delete_labels(
     # Check if labels group exists
     if "labels" not in set(image_group.group_keys()):
         raise ValueError(f"No labels group found in {zarr_url}.")
-    
+
     labels_group = image_group["labels"]
     label_names = labels_group.attrs.asdict().get("labels", [])
 
@@ -47,3 +48,9 @@ def delete_labels(
         label_path = Path(zarr_url) / "labels" / label_name
         if label_path.exists():
             shutil.rmtree(str(label_path))
+
+
+if __name__ == "__main__":
+    from fractal_task_tools.task_wrapper import run_fractal_task
+
+    run_fractal_task(task_function=delete_labels)
