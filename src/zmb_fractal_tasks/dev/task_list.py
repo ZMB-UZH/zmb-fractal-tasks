@@ -11,8 +11,9 @@ INPUT_MODELS = []
 
 TASK_LIST = [
     ParallelTask(
-        name="Add type to image list",
-        executable="add_type.py",
+        name="Add type 'marked' to image list",
+        executable="do_nothing.py",
+        output_types={"marked": True},
         meta={"cpus_per_task": 1, "mem": 100},
         category="Utility",
         tags=["Utility", "Type", "Types", "Image List"],

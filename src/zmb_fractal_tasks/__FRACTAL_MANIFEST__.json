@@ -2,7 +2,10 @@
   "manifest_version": "2",
   "task_list": [
     {
-      "name": "Add type to image list",
+      "name": "Add type 'marked' to image list",
+      "output_types": {
+        "marked": true
+      },
       "category": "Utility",
       "tags": [
         "Utility",
@@ -11,7 +14,7 @@
         "Image List"
       ],
       "type": "parallel",
-      "executable_parallel": "add_type.py",
+      "executable_parallel": "do_nothing.py",
       "meta_parallel": {
         "cpus_per_task": 1,
         "mem": 100
@@ -23,24 +26,15 @@
             "title": "Zarr Url",
             "type": "string",
             "description": "Absolute path to the OME-Zarr image. (standard argument for Fractal tasks, managed by Fractal server)."
-          },
-          "output_types": {
-            "additionalProperties": {
-              "type": "boolean"
-            },
-            "title": "Output Types",
-            "type": "object",
-            "description": "Dictionary where keys are the types to add and values are booleans indicating wheter the type is set to True or False."
           }
         },
         "required": [
-          "zarr_url",
-          "output_types"
+          "zarr_url"
         ],
         "type": "object",
-        "title": "AddType"
+        "title": "DoNothing"
       },
-      "docs_info": "## add_type\nAdd an arbitrary type to each selected image in an image list.\n"
+      "docs_info": "## do_nothing\nDo noting...\n"
     },
     {
       "name": "Aggregate all channel histograms for plate",
