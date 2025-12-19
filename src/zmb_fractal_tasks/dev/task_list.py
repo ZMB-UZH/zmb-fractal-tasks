@@ -16,7 +16,7 @@ TASK_LIST = [
         output_types={"marked": True},
         meta={"cpus_per_task": 1, "mem": 100},
         category="Utility",
-        tags=["Utility", "Type", "Types", "Image List"],
+        tags=["Utility", "Type", "Types", "Image List", "Mark"],
     ),
     NonParallelTask(
         name="Aggregate all channel histograms for plate",
