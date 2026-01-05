@@ -81,7 +81,7 @@ class AdvancedBaSiCParameters(BaseModel):
     rho: float = 1.5
     sort_intensity: bool = False
     sparse_cost_darkfield: float = 0.01
-    working_size: Optional[int | list[int]] = 128
+    working_size: Optional[int] = 128
 
 
 class AdvancedCorrectionParameters(BaseModel):
@@ -255,14 +255,17 @@ def basic_correct_illumination_plate_init(
 
     # create parallelization list for applying illumination correction
     parallelization_list = []
+    init_args = {
+        "illumination_profiles_folder": illumination_profiles_folder,
+        "subtract_median_baseline": advanced_correction_parameters.subtract_median_baseline,
+        "overwrite_input_image": advanced_correction_parameters.overwrite_input_image,
+        "new_well_subgroup_suffix": advanced_correction_parameters.new_well_subgroup_suffix,
+    }
     for zarr_url in zarr_urls:
         parallelization_list.append(
             {
                 "zarr_url": zarr_url,
-                "illumination_profiles_folder": illumination_profiles_folder,
-                "subtract_median_baseline": advanced_correction_parameters.subtract_median_baseline,
-                "overwrite_input_image": advanced_correction_parameters.overwrite_input_image,
-                "new_well_subgroup_suffix": advanced_correction_parameters.new_well_subgroup_suffix,
+                "init_args": init_args,
             }
         )
     logging.info("Returning parallelization list for applying illumination correction:")
