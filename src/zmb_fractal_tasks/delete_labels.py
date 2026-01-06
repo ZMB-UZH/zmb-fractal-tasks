@@ -2,7 +2,7 @@
 
 import shutil
 from pathlib import Path
-from typing import Any
+from typing import Optional
 
 import zarr
 from pydantic import validate_call
@@ -13,7 +13,7 @@ from pydantic import validate_call
 def delete_labels(
     *,
     zarr_url: str,
-    labels_to_delete: list[str],
+    labels_to_delete: Optional[list[str]],
 ):
     """Delete labels from an OME-Zarr image.
 
