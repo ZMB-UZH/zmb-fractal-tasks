@@ -17,7 +17,7 @@ from pydantic import BaseModel, validate_call
 class CoreBaSiCParameters(BaseModel):
     """Core Parameters for BaSiC calculation
 
-    Attributes:
+    Args:
         n_images_sampled: Number of images to sample for illumination
             correction. If there are less images available than n_images, all
             available images will be used.
@@ -40,7 +40,7 @@ class CoreBaSiCParameters(BaseModel):
 class AdvancedBaSiCParameters(BaseModel):
     """Advanced Parameters for BaSiC
 
-    Attributes:
+    Args:
         autosegment: When not False, automatically segment the image before
             fitting. When True, threshold_otsu from scikit-image is used and
             the brighter pixels are taken.When a callable is given, it is used
@@ -87,7 +87,7 @@ class AdvancedBaSiCParameters(BaseModel):
 class AdvancedCorrectionParameters(BaseModel):
     """Parameters for applying illumination correction
 
-    Attributes:
+    Args:
         overwrite_input_image: If True, overwrite the input image. If False,
             create a new well sub-group to store the corrected image.
         new_well_subgroup_suffix: Suffix to add to original well sub-group

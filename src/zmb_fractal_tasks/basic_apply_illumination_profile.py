@@ -12,7 +12,7 @@ from pydantic import BaseModel, validate_call
 class InitArgsBaSiCApply(BaseModel):
     """Init Args for basic_apply_illumination_profile task.
 
-    Attributes:
+    Args:
         illumination_profiles_folder: Path of folder of illumination profiles.
             If left empty, looks for illumination profiles in
             zarr_dir/basic_illumination_profiles.
