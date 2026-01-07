@@ -11,14 +11,6 @@ DOCS_LINK = None
 INPUT_MODELS = []
 
 TASK_LIST = [
-    ParallelTask(
-        name="Add type 'marked' to image list",
-        executable="do_nothing.py",
-        output_types={"marked": True},
-        meta={"cpus_per_task": 1, "mem": 100},
-        category="Utility",
-        tags=["Utility", "Type", "Types", "Image List", "Mark"],
-    ),
     NonParallelTask(
         name="Aggregate all channel histograms for plate",
         executable="aggregate_plate_histograms.py",
@@ -43,6 +35,15 @@ TASK_LIST = [
         meta={"cpus_per_task": 1, "mem": 4000},
         category="Measurement",
         tags=["Percentiles", "Histogram", "Normalization"],
+    ),
+    CompoundTask(
+        name="Merge acquisitions along channel axis",
+        executable_init="combine_acquisitions_init.py",
+        executable="combine_acquisitions_parallel.py",
+        meta_init={"cpus_per_task": 1, "mem": 4000},
+        meta={"cpus_per_task": 1, "mem": 4000},
+        category="Utility",
+        tags=["Merge", "Acquisitions", "Combine"],
     ),
     ParallelTask(
         name="Delete labels from OME-Zarr image",
