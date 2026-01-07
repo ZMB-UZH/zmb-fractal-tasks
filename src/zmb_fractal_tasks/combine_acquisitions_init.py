@@ -95,8 +95,8 @@ def combine_acquisitions_init(
                         image_path=str(acquisition_path.split("/")[-1]),
                     )
 
-    logging.info("Returning parallelization list for applying illumination correction:")
-    return parallelization_list
+    logging.info("Returning parallelization list for combine_acquisitions_parallel.")
+    return {"parallelization_list": parallelization_list}
 
 
 if __name__ == "__main__":

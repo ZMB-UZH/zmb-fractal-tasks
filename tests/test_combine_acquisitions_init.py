@@ -43,11 +43,13 @@ def test_combine_acquisitions_init_basic(zarr_MIP_path, tmp_path):
     )
 
     # Check that parallelization list is returned
-    assert isinstance(result, list)
-    assert len(result) == 1
+    assert isinstance(result, dict)
+    assert "parallelization_list" in result
+    parallelization_list = result["parallelization_list"]
+    assert len(parallelization_list) == 1
 
     # Check the structure of the parallelization item
-    item = result[0]
+    item = parallelization_list[0]
     assert "zarr_url" in item
     assert "init_args" in item
 
@@ -102,9 +104,11 @@ def test_combine_acquisitions_init_remove_originals(zarr_MIP_path, tmp_path):
     )
 
     # Check result structure
-    assert isinstance(result, list)
-    assert len(result) == 1
-    assert result[0]["init_args"]["keep_individual_acquisitions"] is False
+    assert isinstance(result, dict)
+    assert "parallelization_list" in result
+    parallelization_list = result["parallelization_list"]
+    assert len(parallelization_list) == 1
+    assert parallelization_list[0]["init_args"]["keep_individual_acquisitions"] is False
 
     # Verify plate metadata - original acquisitions should be removed from metadata
     plate = open_ome_zarr_plate(test_zarr)
@@ -145,8 +149,10 @@ def test_combine_acquisitions_init_single_acquisition(zarr_MIP_path, tmp_path):
     )
 
     # Should return empty list since there's only one acquisition
-    assert isinstance(result, list)
-    assert len(result) == 0
+    assert isinstance(result, dict)
+    assert "parallelization_list" in result
+    parallelization_list = result["parallelization_list"]
+    assert len(parallelization_list) == 0
 
 
 def test_combine_acquisitions_init_multiple_wells(zarr_MIP_path, tmp_path):
@@ -200,11 +206,13 @@ def test_combine_acquisitions_init_multiple_wells(zarr_MIP_path, tmp_path):
     )
 
     # Should have parallelization items for both wells
-    assert isinstance(result, list)
-    assert len(result) == 2, f"Expected 2 results (one per well), got {len(result)}"
+    assert isinstance(result, dict)
+    assert "parallelization_list" in result
+    parallelization_list = result["parallelization_list"]
+    assert len(parallelization_list) == 2, f"Expected 2 results (one per well), got {len(parallelization_list)}"
 
     # Check that both wells are represented
-    zarr_urls_new = [item["zarr_url"] for item in result]
+    zarr_urls_new = [item["zarr_url"] for item in parallelization_list]
     # Extract well rows from the URLs (B or C)
     # URL format is .../plate.zarr/B/03/2 or .../plate.zarr/B/3/2
     well_rows_in_results = [url.split("/")[-3] for url in zarr_urls_new]
@@ -216,7 +224,7 @@ def test_combine_acquisitions_init_multiple_wells(zarr_MIP_path, tmp_path):
         f"Expected row C in results, got: {well_rows_in_results}"
 
     # Verify each result has correct structure
-    for item in result:
+    for item in parallelization_list:
         assert "zarr_url" in item
         assert "init_args" in item
         assert len(item["init_args"]["zarr_urls_to_combine"]) == 2
@@ -266,11 +274,13 @@ def test_combine_acquisitions_init_specific_acquisitions(zarr_MIP_path, tmp_path
     )
 
     # Should have one parallelization item
-    assert isinstance(result, list)
-    assert len(result) == 1
+    assert isinstance(result, dict)
+    assert "parallelization_list" in result
+    parallelization_list = result["parallelization_list"]
+    assert len(parallelization_list) == 1
 
     # Check that only 2 acquisitions are being combined
-    item = result[0]
+    item = parallelization_list[0]
     init_args = item["init_args"]
     assert len(init_args["zarr_urls_to_combine"]) == 2
 
