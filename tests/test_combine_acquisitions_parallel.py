@@ -3,6 +3,7 @@ from pathlib import Path
 
 import numpy as np
 from ngio import open_ome_zarr_container
+from ngio.tables import GenericTable
 
 from zmb_fractal_tasks.combine_acquisitions_parallel import (
     InitArgsCombineAcquisitionsParallel,
@@ -251,3 +252,58 @@ def test_combine_acquisitions_parallel_three_acquisitions(zarr_MIP_path, tmp_pat
 
     # Should have 3x the original channels
     assert combined_channels == initial_channels * 3
+
+
+def test_combine_acquisitions_parallel_copy_tables(zarr_MIP_path, tmp_path):
+    """Test that tables from first acquisition are copied to combined acquisition."""
+    import pandas as pd
+
+    # Create two separate acquisition copies
+    acq0_path = tmp_path / "acq0.zarr"
+    acq1_path = tmp_path / "acq1.zarr"
+    shutil.copytree(zarr_MIP_path / "B" / "03" / "0", acq0_path, dirs_exist_ok=True)
+    shutil.copytree(zarr_MIP_path / "B" / "03" / "0", acq1_path, dirs_exist_ok=True)
+
+    # Add test tables to both acquisitions
+    omezarr_acq0 = open_ome_zarr_container(str(acq0_path))
+    omezarr_acq1 = open_ome_zarr_container(str(acq1_path))
+
+    # Create test tables with different data
+    test_table_0 = GenericTable(
+        pd.DataFrame({"label": [1, 2, 3], "value_acq0": [10, 20, 30]})
+    )
+    test_table_1 = GenericTable(
+        pd.DataFrame({"label": [1, 2, 3], "value_acq1": [100, 200, 300]})
+    )
+
+    omezarr_acq0.add_table("test_table", test_table_0)
+    omezarr_acq1.add_table("test_table", test_table_1)
+
+    # Also add another table only to acq0
+    extra_table = GenericTable(pd.DataFrame({"label": [1], "extra": [999]}))
+    omezarr_acq0.add_table("extra_table", extra_table)
+
+    # Set up the combined output path
+    combined_path = tmp_path / "combined.zarr"
+
+    # Create init args
+    init_args = InitArgsCombineAcquisitionsParallel(
+        zarr_urls_to_combine=[str(acq0_path), str(acq1_path)],
+        keep_individual_acquisitions=True,
+    )
+
+    # Run the parallel task
+    result = combine_acquisitions_parallel(
+        zarr_url=str(combined_path),
+        init_args=init_args,
+    )
+
+    # Check that combined acquisition was created
+    assert combined_path.exists()
+
+    # Verify tables from first acquisition were copied
+    combined_omezarr = open_ome_zarr_container(str(combined_path))
+    table_names = combined_omezarr.list_tables()
+
+    assert "test_table" in table_names
+    assert "extra_table" in table_names

@@ -21,6 +21,9 @@ def combine_acquisitions_init(
     If there are multiple acquisitions for a given well, this task will
     combine them into a single acquisition by concatenating the channels.
 
+    Tables will be copied from the first acquisition. Label images are not
+    handled in this version.
+
     Args:
         zarr_urls: List of paths or urls to the individual OME-Zarr images to
             be processed.

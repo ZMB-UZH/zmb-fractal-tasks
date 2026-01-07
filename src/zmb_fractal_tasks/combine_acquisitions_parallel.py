@@ -82,7 +82,7 @@ def combine_acquisitions_parallel(
         chunks[axis] = size
     chunks = (chunks['t'], chunks['c'], chunks['z'], chunks['y'], chunks['x'])
     # create new OME-Zarr
-    create_ome_zarr_from_array(
+    new_omezarr = create_ome_zarr_from_array(
         zarr_url,
         combined_image_data,
         xy_pixelsize=ref_img.pixel_size.x,
@@ -96,6 +96,14 @@ def combine_acquisitions_parallel(
         channel_colors=channel_colors,
         chunks=chunks,
     )
+
+    # copy tables from first acquisition
+    ref_omezarr = open_ome_zarr_container(init_args.zarr_urls_to_combine[0])
+    for table_name in ref_omezarr.list_tables():
+        table = ref_omezarr.get_table(table_name)
+        new_omezarr.add_table(table_name, table)
+
+    # TODO: handle label images?
 
     image_list_updates = [
         {
