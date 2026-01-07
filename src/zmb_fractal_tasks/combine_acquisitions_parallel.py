@@ -110,12 +110,9 @@ def combine_acquisitions_parallel(
         for url in init_args.zarr_urls_to_combine:
             logging.info(f"Deleting individual acquisition at {url}")
             shutil.rmtree(url)
-        image_list_removals = [
-            {"zarr_url": url} for url in init_args.zarr_urls_to_combine
-        ]
         return {
             "image_list_updates": image_list_updates,
-            "image_list_removals": image_list_removals,
+            "image_list_removals": init_args.zarr_urls_to_combine,
         }
 
 
