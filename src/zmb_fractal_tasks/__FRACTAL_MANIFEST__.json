@@ -2,42 +2,6 @@
   "manifest_version": "2",
   "task_list": [
     {
-      "name": "Add type 'marked' to image list",
-      "output_types": {
-        "marked": true
-      },
-      "category": "Utility",
-      "tags": [
-        "Utility",
-        "Type",
-        "Types",
-        "Image List",
-        "Mark"
-      ],
-      "type": "parallel",
-      "executable_parallel": "do_nothing.py",
-      "meta_parallel": {
-        "cpus_per_task": 1,
-        "mem": 100
-      },
-      "args_schema_parallel": {
-        "additionalProperties": false,
-        "properties": {
-          "zarr_url": {
-            "title": "Zarr Url",
-            "type": "string",
-            "description": "Absolute path to the OME-Zarr image. (standard argument for Fractal tasks, managed by Fractal server)."
-          }
-        },
-        "required": [
-          "zarr_url"
-        ],
-        "type": "object",
-        "title": "DoNothing"
-      },
-      "docs_info": "## do_nothing\nDo noting...\n"
-    },
-    {
       "name": "Aggregate all channel histograms for plate",
       "category": "Measurement",
       "tags": [
@@ -218,19 +182,9 @@
                 "type": "number"
               },
               "working_size": {
-                "anyOf": [
-                  {
-                    "type": "integer"
-                  },
-                  {
-                    "items": {
-                      "type": "integer"
-                    },
-                    "type": "array"
-                  }
-                ],
                 "default": 128,
-                "title": "Working Size"
+                "title": "Working Size",
+                "type": "integer"
               }
             },
             "title": "AdvancedBaSiCParameters",
@@ -502,6 +456,110 @@
         "title": "CalculateHistograms"
       },
       "docs_info": "## calculate_histograms\nCalculate channel histograms of image.\n"
+    },
+    {
+      "name": "Merge acquisitions along channel axis",
+      "category": "Utility",
+      "tags": [
+        "Merge",
+        "Acquisitions",
+        "Combine"
+      ],
+      "type": "compound",
+      "executable_non_parallel": "combine_acquisitions_init.py",
+      "executable_parallel": "combine_acquisitions_parallel.py",
+      "meta_non_parallel": {
+        "cpus_per_task": 1,
+        "mem": 4000
+      },
+      "meta_parallel": {
+        "cpus_per_task": 1,
+        "mem": 4000
+      },
+      "args_schema_non_parallel": {
+        "additionalProperties": false,
+        "properties": {
+          "zarr_urls": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Zarr Urls",
+            "type": "array",
+            "description": "List of paths or urls to the individual OME-Zarr images to be processed. (Standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "zarr_dir": {
+            "title": "Zarr Dir",
+            "type": "string",
+            "description": "Profiles will be saved in {zarr_dir}/{illumination_profiles_folder_name} (Standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "acquisitions_to_combine": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Acquisitions To Combine",
+            "type": "array",
+            "description": "Optional: List of acquisition IDs to combine. If left empty, all acquisitions found in the plate will be combined."
+          },
+          "keep_individual_acquisitions": {
+            "default": false,
+            "title": "Keep Individual Acquisitions",
+            "type": "boolean",
+            "description": "If True, keep the individual acquisitions and add combined acquisition. If False, delete them and only keep the combined acquisition."
+          }
+        },
+        "required": [
+          "zarr_urls",
+          "zarr_dir"
+        ],
+        "type": "object",
+        "title": "CombineAcquisitionsInit"
+      },
+      "args_schema_parallel": {
+        "$defs": {
+          "InitArgsCombineAcquisitionsParallel": {
+            "description": "Init Args for combine_acquisitions_parallel task.",
+            "properties": {
+              "zarr_urls_to_combine": {
+                "items": {
+                  "type": "string"
+                },
+                "title": "Zarr Urls To Combine",
+                "type": "array"
+              },
+              "keep_individual_acquisitions": {
+                "default": false,
+                "title": "Keep Individual Acquisitions",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "zarr_urls_to_combine"
+            ],
+            "title": "InitArgsCombineAcquisitionsParallel",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "zarr_url": {
+            "title": "Zarr Url",
+            "type": "string",
+            "description": "Absolute path to the new OME-Zarr image."
+          },
+          "init_args": {
+            "$ref": "#/$defs/InitArgsCombineAcquisitionsParallel",
+            "title": "Init Args",
+            "description": "Initialization arguments from the init task."
+          }
+        },
+        "required": [
+          "zarr_url",
+          "init_args"
+        ],
+        "type": "object",
+        "title": "CombineAcquisitionsParallel"
+      },
+      "docs_info": "## combine_acquisitions_init\nCombine multiple acquisitions of a plate into a single acquisition.\n\nIf there are multiple acquisitions for a given well, this task will\ncombine them into a single acquisition by concatenating the channels.\n## combine_acquisitions_parallel\nCombine multiple acquisitions into a single acquisition.\n"
     },
     {
       "name": "Delete labels from OME-Zarr image",
