@@ -84,10 +84,13 @@ class AdvancedBaSiCParameters(BaseModel):
     working_size: Optional[int] = 128
 
 
-class AdvancedCorrectionParameters(BaseModel):
-    """Parameters for applying illumination correction
+class OutputOptions(BaseModel):
+    """Options for output
 
     Args:
+        overwrite_illumination_profiles: If True, overwrite existing
+            illumination profiles of the same name. If False, an error is
+            raised if illumination profiles already exist.
         overwrite_input_image: If True, overwrite the input image. If False,
             create a new well sub-group to store the corrected image.
         new_well_subgroup_suffix: Suffix to add to original well sub-group
@@ -97,6 +100,7 @@ class AdvancedCorrectionParameters(BaseModel):
             image.
     """
 
+    overwrite_illumination_profiles: bool = (True,)
     overwrite_input_image: bool = True
     new_well_subgroup_suffix: str = "illumination_corrected"
     subtract_median_baseline: bool = False
@@ -108,40 +112,35 @@ def basic_correct_illumination_plate_init(
     zarr_urls: list[str],
     zarr_dir: str,
     illumination_profiles_folder_name: str = "BaSiC_illumination_profiles",
-    overwrite_illumination_profiles: bool = True,
+    output_options: OutputOptions = OutputOptions(),  # noqa: B008
     core_basic_parameters: CoreBaSiCParameters = CoreBaSiCParameters(),  # noqa: B008
     advanced_basic_parameters: AdvancedBaSiCParameters = AdvancedBaSiCParameters(),  # noqa: B008
-    advanced_correction_parameters: AdvancedCorrectionParameters = AdvancedCorrectionParameters(),  # noqa: B008
 ) -> dict[str, Any]:
-    """Calculate illumination profiles for all channels in a plate using BaSiC.
+    """Calculate illumination profiles and correct channels using BaSiC.
 
     See https://basicpy.readthedocs.io for more information on BaSiC.
     This task calculates illumination correction profiles based on a random
-    sample of FOVs for each channel.
+    sample of FOVs of the entire plate for each channel. It stores the
+    calculated illumination profiles in a specified folder and corrects each
+    image in the plate using these profiles.
     NOTE: This assumes that all FOVs in the plate have the same dimensions.
 
-    The calculated illumination profiles are saved in the specified folder,
-    and can be applied to images using the 'Basic: Apply illumination profile'
-    task.
-
     Args:
-        zarr_urls: List of paths or urls to the individual OME-Zarr images to
-            be processed.
+        zarr_urls (list[str]): List of paths or urls to the individual OME-Zarr
+            images to be processed.
             (Standard argument for Fractal tasks, managed by Fractal server).
-        zarr_dir: Profiles will be saved in
+        zarr_dir (str): Profiles will be saved in
             {zarr_dir}/{illumination_profiles_folder_name}
             (Standard argument for Fractal tasks, managed by Fractal server).
-        illumination_profiles_folder_name: Name of folder to save illumination
-            profiles in. The folder will be created inside zarr_dir.
-        overwrite_illumination_profiles: If True, overwrite existing
-            illumination profiles of the same name. If False, an error is
-            raised if illumination profiles already exist.
-        core_basic_parameters: Core parameters for BaSiC illumination
-            correction.
-        advanced_basic_parameters: Advanced parameters for BaSiC illumination
-            correction. See https://basicpy.readthedocs.io/en/latest/api.html
-        advanced_correction_parameters: Parameters for applying illumination
-            correction.
+        illumination_profiles_folder_name (str): Name of folder to save
+            illumination profiles in. The folder will be created inside
+            zarr_dir.
+        output_options (OutputOptions): Options for output.
+        core_basic_parameters (CoreBaSiCParameters): Core parameters for BaSiC
+            illumination correction.
+        advanced_basic_parameters (AdvancedBaSiCParameters): Advanced
+            parameters for BaSiC illumination correction.
+            See https://basicpy.readthedocs.io/en/latest/api.html
     """
     # Set illumination profiles folder
     illumination_profiles_folder = str(
@@ -241,7 +240,7 @@ def basic_correct_illumination_plate_init(
         # save illumination correction profile
         logging.info("Saving illumination correction profile...")
         folder_path = Path(illumination_profiles_folder) / f"{channel}"
-        if overwrite_illumination_profiles:
+        if output_options.overwrite_illumination_profiles:
             if os.path.isdir(folder_path):
                 shutil.rmtree(folder_path)
         folder_path.mkdir(parents=True, exist_ok=False)
@@ -257,9 +256,9 @@ def basic_correct_illumination_plate_init(
     parallelization_list = []
     init_args = {
         "illumination_profiles_folder": illumination_profiles_folder,
-        "subtract_median_baseline": advanced_correction_parameters.subtract_median_baseline,
-        "overwrite_input_image": advanced_correction_parameters.overwrite_input_image,
-        "new_well_subgroup_suffix": advanced_correction_parameters.new_well_subgroup_suffix,
+        "subtract_median_baseline": output_options.subtract_median_baseline,
+        "overwrite_input_image": output_options.overwrite_input_image,
+        "new_well_subgroup_suffix": output_options.new_well_subgroup_suffix,
     }
     for zarr_url in zarr_urls:
         parallelization_list.append(
