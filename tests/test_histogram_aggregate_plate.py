@@ -6,7 +6,7 @@ from zmb_fractal_tasks.histogram_calculate import (
 )
 
 
-def test_aggregate_plate_histograms(tmpdir, zarr_path):
+def test_histogram_aggregate_plate(tmpdir, zarr_path):
     histogram_calculate(
         zarr_url=str(zarr_path / "B" / "03" / "0"),
         pyramid_level="2",

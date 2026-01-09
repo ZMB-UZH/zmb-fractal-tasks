@@ -59,7 +59,7 @@ TASK_LIST = [
         executable="update_display_range.py",
         meta={"cpus_per_task": 1, "mem": 4000},
         category="Measurement",
-        tags=["Percentiles", "Histogram", "Normalization"],
+        tags=["Percentiles", "Histogram", "Normalization", "Contrast", "Auto Contrast"],
     ),
     ParallelTask(
         name="Expand segmentation",

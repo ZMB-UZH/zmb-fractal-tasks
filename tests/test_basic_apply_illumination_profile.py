@@ -4,8 +4,8 @@ from zmb_fractal_tasks.basic_apply_illumination_profile import (
 )
 from zmb_fractal_tasks.basic_correct_illumination_plate_init import (
     AdvancedBaSiCParameters,
-    AdvancedCorrectionParameters,
     CoreBaSiCParameters,
+    OutputOptions,
     basic_correct_illumination_plate_init,
 )
 
@@ -20,16 +20,15 @@ def test_basic_apply_illumination_profile(tmpdir, zarr_path):
         random_seed=11,
     )
     advanced_basic_parameters = AdvancedBaSiCParameters()
-    advanced_correction_parameters = AdvancedCorrectionParameters()
+    output_options = OutputOptions()
 
     result = basic_correct_illumination_plate_init(
         zarr_urls=[str(zarr_path / "B" / "03" / "0")],
         zarr_dir=str(tmpdir),
         illumination_profiles_folder_name="illumination_profiles",
-        overwrite_illumination_profiles=True,
         core_basic_parameters=core_parameters,
         advanced_basic_parameters=advanced_basic_parameters,
-        advanced_correction_parameters=advanced_correction_parameters,
+        output_options=output_options,
     )
 
     # Apply illumination correction
