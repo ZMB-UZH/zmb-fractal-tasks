@@ -27,13 +27,6 @@ INPUT_MODELS = [
 ]
 
 TASK_LIST = [
-    NonParallelTask(
-        name="Aggregate all channel histograms for plate",
-        executable="aggregate_plate_histograms.py",
-        meta={"cpus_per_task": 1, "mem": 4000},
-        category="Measurement",
-        tags=["Percentiles", "Histogram", "Normalization"],
-    ),
     CompoundTask(
         name="BaSiC: Calculate and apply illumination correction for plate",
         input_types={"illumination_corrected": False},
@@ -44,13 +37,6 @@ TASK_LIST = [
         meta={"cpus_per_task": 1, "mem": 4000},
         category="Image Processing",
         tags=["Illumination correction", "BaSiC"],
-    ),
-    ParallelTask(
-        name="Calculate channel-histograms for each image",
-        executable="calculate_histograms.py",
-        meta={"cpus_per_task": 1, "mem": 4000},
-        category="Measurement",
-        tags=["Percentiles", "Histogram", "Normalization"],
     ),
     CompoundTask(
         name="Merge acquisitions along channel axis",
@@ -81,6 +67,20 @@ TASK_LIST = [
         meta={"cpus_per_task": 1, "mem": 4000},
         category="Segmentation",
         tags=["Expand"],
+    ),
+    ParallelTask(
+        name="Histograms: Calculate channel-histograms for each image",
+        executable="histogram_calculate.py",
+        meta={"cpus_per_task": 1, "mem": 4000},
+        category="Measurement",
+        tags=["Percentiles", "Histogram", "Normalization"],
+    ),
+    NonParallelTask(
+        name="Histograms: Aggregate plate-histograms",
+        executable="histogram_aggregate_plate.py",
+        meta={"cpus_per_task": 1, "mem": 4000},
+        category="Measurement",
+        tags=["Percentiles", "Histogram", "Normalization"],
     ),
     ParallelTask(
         name="Measure features",

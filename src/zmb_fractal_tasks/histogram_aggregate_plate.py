@@ -3,7 +3,6 @@
 import logging
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Optional
 
 import zarr
 from ngio import open_ome_zarr_container
@@ -18,7 +17,7 @@ from zmb_fractal_tasks.utils.histogram import (
 
 
 @validate_call
-def aggregate_plate_histograms(
+def histogram_aggregate_plate(
     *,
     zarr_urls: list[str],
     zarr_dir: str,
@@ -28,10 +27,13 @@ def aggregate_plate_histograms(
     display_range_percentiles: Sequence[float] = (0.5, 99.5),
     overwrite: bool = True,
 ) -> None:
-    """Find all channel histograms in a plate and combine them.
+    """Combine all histograms in a plate and write to table in each image.
 
-    In each image, a new table is created with the combined histograms.
-    The new table is named as the input histogram table with suffix "_plate".
+    All channel intensity histograms in each image are loaded and combined. The
+    resulting combined histograms are then saved in a new table in each image.
+
+    ONE FIRST NEEDS TO RUN THE "Histograms: Calculate channel-histograms for each image"
+    TASK!
 
     Args:
         zarr_urls: List of paths or urls to the individual OME-Zarr images to
@@ -40,8 +42,10 @@ def aggregate_plate_histograms(
         zarr_dir: Not used for this task.
             (Standard argument for Fractal tasks, managed by Fractal server).
         histogram_input_name: Table name of the histogram table to be combined.
+            (Output of the "Histograms: Calculate channel-histograms for each image"
+            task).
         histogram_output_name: Table name of the output combined histogram.
-        update_display_range: If True, update the display range of the image.
+        update_display_range: If True, update the display range of the images.
             (Saved in the omero metadata of the zarr file).
         display_range_percentiles: Percentiles (e.g. [0.5, 99.5]) to use
             for display range calculation. (Only used if update_display_range
@@ -115,4 +119,4 @@ def aggregate_plate_histograms(
 if __name__ == "__main__":
     from fractal_task_tools.task_wrapper import run_fractal_task
 
-    run_fractal_task(task_function=aggregate_plate_histograms)
+    run_fractal_task(task_function=histogram_aggregate_plate)

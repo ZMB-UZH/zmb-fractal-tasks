@@ -11,7 +11,7 @@ from zmb_fractal_tasks.utils.histogram import Histogram, histograms_to_anndata
 
 
 @validate_call
-def calculate_histograms(
+def histogram_calculate(
     *,
     zarr_url: str,
     pyramid_level: str = "0",
@@ -24,12 +24,17 @@ def calculate_histograms(
 ) -> None:
     """Calculate channel histograms of image.
 
+    Calculates intensity histograms for each channel of the image,
+    by looping over ROIs defined in the input ROI table. The resulting
+    histograms are saved in a new table in the OME-Zarr.
+
     Args:
         zarr_url: Absolute path to the OME-Zarr image.
             (standard argument for Fractal tasks, managed by Fractal server).
-        pyramid_level: Resolution level to calculate histograms on. Choose `0`
-            for full resolution.
-        input_ROI_table: Name of the ROI table over which the task loops
+        pyramid_level: Resolution level to calculate histograms on. (E.g. `0`
+            for full resolution).
+        input_ROI_table: Name of the ROI table over which the task loops. If
+            left empty, the whole image is used.
         bin_width: Width of the histogram bins. A bin-width of 1 is suitable
             for integer-valued images (e.g. 8-bit or 16-bit images).
         update_display_range: If True, update the display range of the image.
@@ -44,7 +49,10 @@ def calculate_histograms(
 
     image = omezarr.get_image(path=pyramid_level)
 
-    roi_table = omezarr.get_table(input_ROI_table)
+    if input_ROI_table == "":
+        input_ROI_table = None
+    else:
+        roi_table = omezarr.get_table(input_ROI_table)
 
     channels = image.channel_labels
 
@@ -52,8 +60,12 @@ def calculate_histograms(
     for channel in channels:
         channel_idx = image.channel_labels.index(channel)
         channel_histo = Histogram(bin_width=bin_width)
-        for roi in roi_table.rois():
-            data_da = image.get_roi(roi, c=channel_idx, mode="dask")
+        if roi_table:
+            for roi in roi_table.rois():
+                data_da = image.get_roi(roi, c=channel_idx, mode="dask")
+                channel_histo.add_histogram(Histogram(data_da, bin_width=bin_width))
+        else:
+            data_da = image.get_array(c=channel_idx, mode="dask")
             channel_histo.add_histogram(Histogram(data_da, bin_width=bin_width))
         channel_histos[channel] = channel_histo
 
@@ -87,4 +99,4 @@ def calculate_histograms(
 if __name__ == "__main__":
     from fractal_task_tools.task_wrapper import run_fractal_task
 
-    run_fractal_task(task_function=calculate_histograms)
+    run_fractal_task(task_function=histogram_calculate)
