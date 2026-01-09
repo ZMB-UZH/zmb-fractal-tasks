@@ -14,6 +14,28 @@ from ngio import open_ome_zarr_container
 from pydantic import BaseModel, validate_call
 
 
+class OutputOptions(BaseModel):
+    """Options for output
+
+    Args:
+        overwrite_illumination_profiles: If True, overwrite existing
+            illumination profiles of the same name. If False, an error is
+            raised if illumination profiles already exist.
+        overwrite_input_image: If True, overwrite the input image. If False,
+            create a new well sub-group to store the corrected image.
+        new_well_subgroup_suffix: Suffix to add to original well sub-group
+            name. Only used if overwrite_input_image is False.
+        subtract_median_baseline: If True, do a background subtraction by
+            subtracting the median of all baseline values from the corrected
+            image.
+    """
+
+    overwrite_illumination_profiles: bool = (True,)
+    overwrite_input_image: bool = True
+    new_well_subgroup_suffix: str = "illumination_corrected"
+    subtract_median_baseline: bool = False
+
+
 class CoreBaSiCParameters(BaseModel):
     """Core Parameters for BaSiC calculation
 
@@ -84,28 +106,6 @@ class AdvancedBaSiCParameters(BaseModel):
     working_size: Optional[int] = 128
 
 
-class OutputOptions(BaseModel):
-    """Options for output
-
-    Args:
-        overwrite_illumination_profiles: If True, overwrite existing
-            illumination profiles of the same name. If False, an error is
-            raised if illumination profiles already exist.
-        overwrite_input_image: If True, overwrite the input image. If False,
-            create a new well sub-group to store the corrected image.
-        new_well_subgroup_suffix: Suffix to add to original well sub-group
-            name. Only used if overwrite_input_image is False.
-        subtract_median_baseline: If True, do a background subtraction by
-            subtracting the median of all baseline values from the corrected
-            image.
-    """
-
-    overwrite_illumination_profiles: bool = (True,)
-    overwrite_input_image: bool = True
-    new_well_subgroup_suffix: str = "illumination_corrected"
-    subtract_median_baseline: bool = False
-
-
 @validate_call
 def basic_correct_illumination_plate_init(
     *,
@@ -165,20 +165,19 @@ def basic_correct_illumination_plate_init(
         raise ValueError("FOVs have differing dimensions")
 
     # get list of all channels
-    # TODO: handle case where no channel names are available?
-    channels = [ngio_image.channel_labels for ngio_image in ngio_images]
-    channels = {channel for sublist in channels for channel in sublist}
-    logging.info(f"Processing {len(channels)} channels: {channels}")
+    wavelength_ids = [ngio_image.wavelength_ids for ngio_image in ngio_images]
+    wavelength_ids = {id for sublist in wavelength_ids for id in sublist}
+    logging.info(f"Processing {len(wavelength_ids)} channels: {wavelength_ids}")
 
     # process each channel
     basic_dict = {}
-    for i, channel in enumerate(channels):
-        logging.info(f"Processing channel {i}/{len(channels)}: {channel}")
+    for i, channel in enumerate(wavelength_ids):
+        logging.info(f"Processing channel {i}/{len(wavelength_ids)}: {channel}")
         fov_data_all = []
         for omezarr in omezarrs:
             ngio_image = omezarr.get_image()
-            if channel in ngio_image.channel_labels:
-                channel_idx = ngio_image.channel_labels.index(channel)
+            if channel in ngio_image.wavelength_ids:
+                channel_idx = ngio_image.wavelength_ids.index(channel)
                 roi_table = omezarr.get_table("FOV_ROI_table")
                 for roi in roi_table.rois():
                     roi_data = ngio_image.get_roi(
