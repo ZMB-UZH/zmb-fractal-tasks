@@ -8,7 +8,23 @@ from fractal_task_tools.task_models import (
 
 AUTHORS = "Flurin Sturzenegger"
 DOCS_LINK = None
-INPUT_MODELS = []
+INPUT_MODELS = [
+    (
+        "zmb_fractal_tasks",
+        "basic_correct_illumination_plate_init.py",
+        "OutputOptions",
+    ),
+    (
+        "zmb_fractal_tasks",
+        "basic_correct_illumination_plate_init.py",
+        "CoreBaSiCParameters",
+    ),
+    (
+        "zmb_fractal_tasks",
+        "basic_correct_illumination_plate_init.py",
+        "AdvancedBaSiCParameters",
+    ),
+]
 
 TASK_LIST = [
     NonParallelTask(
