@@ -166,7 +166,7 @@ def basic_correct_illumination_plate_init(
 
     # get list of all channels
     wavelength_ids = [ngio_image.wavelength_ids for ngio_image in ngio_images]
-    wavelength_ids = {id for sublist in wavelength_ids for id in sublist}
+    wavelength_ids = {wlid for sublist in wavelength_ids for wlid in sublist}
     logging.info(f"Processing {len(wavelength_ids)} channels: {wavelength_ids}")
 
     # process each channel
