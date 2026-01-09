@@ -23,26 +23,41 @@ def smo_background_estimation(
 ) -> dict[str, Any]:
     """Estimates background of each FOV using SMO.
 
-    Only works with 2D data at the moment.
+    Uses the SMO algorithm to estimate background for each FOV & channel. In
+    short, SMO uses local gradient amount to identify background pixels. See
+    the SMO publication for details: https://doi.org/10.1364/JOSAA.477468
+
+    Limitation: Currently, does not support 3D or time-lapse images.
 
     Args:
         zarr_url: Absolute path to the OME-Zarr image.
             (standard argument for Fractal tasks, managed by Fractal server).
-        sigma: Standard deviation for Gaussian kernel of pre-filter.
-        size: Averaging window size in pixels. Should be smaller than
-            foreground objects.
+        sigma: Standard deviation for Gaussian pre-filter to reduce noise.
+        size: Window size in pixels to average gradient. Should be smaller than
+            foreground objects & background regions.
         subtract_background: If True, subtract the estimated background from
             the image (clipping at zero).
         overwrite_input_image: If True, overwrite the input image. If False,
-            create a new well sub-group to store the corrected image.
+            create a new well sub-group to store the corrected image. Only used
+            if subtract_background is True.
         new_well_subgroup_suffix: Suffix to add to the new well sub-group
             name. Only used if overwrite_input_image is False.
     """
     omezarr = open_ome_zarr_container(zarr_url)
     source_image = omezarr.get_image()
+
+    # TODO: support 3D / time-lapse?
+    if source_image.dimensions.has_axis("z"):
+        if source_image.dimensions.get("z") > 1:
+            raise ValueError("SMO background estimation does not support 3D images.")
+    if source_image.dimensions.has_axis("t"):
+        if source_image.dimensions.get("t") > 1:
+            raise ValueError(
+                "SMO background estimation does not support time-lapse images."
+            )
+    # TODO: Add options for iterating & masking
     roi_table = omezarr.get_table("FOV_ROI_table")
 
-    # TODO: handle case where no channel names are available?
     channels = source_image.channel_labels
 
     # Estimate BG for each FOV & channel
