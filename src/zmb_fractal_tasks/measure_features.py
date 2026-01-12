@@ -220,7 +220,7 @@ def measure_features_ROI(
     is_empty = len(unique_labels) == 0
 
     if is_empty:
-        # Create empty dataframe with all expected columns
+        # Create & return empty dataframe with all expected columns
         columns = list(optional_columns.keys()) + structure_props
         for int_prefix in int_prefix_list:
             columns.extend([f"{int_prefix}_{prop}" for prop in intensity_props])

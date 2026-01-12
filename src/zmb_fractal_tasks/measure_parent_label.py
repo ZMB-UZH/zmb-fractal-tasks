@@ -8,7 +8,9 @@ from typing import Any
 import numpy as np
 import pandas as pd
 from ngio import open_ome_zarr_container
+from ngio.experimental.iterators import FeatureExtractorIterator
 from ngio.tables import FeatureTable
+from ngio.transforms import ZoomTransform
 from pydantic import validate_call
 
 from zmb_fractal_tasks.utils.regionprops_table_plus import regionprops_table_plus
@@ -22,9 +24,8 @@ def measure_parent_label(
     input_label_name: str,
     parent_label_names: Sequence[str],
     pyramid_level: str = "0",
-    roi_table_name: str = "FOV_ROI_table",
-    append: bool = True,
-    overwrite: bool = False,
+    roi_table: str = "FOV_ROI_table",
+    append_to_table: bool = True,
 ) -> None:
     """Assign label to parent label.
 
@@ -41,16 +42,19 @@ def measure_parent_label(
         pyramid_level: Resolution level of the label image to use for
             calculations. Choose `0` for full resolution.
             Only tested for 2D images at level 0.
-        roi_table_name: Name of the ROI table to iterate over.
-        append: If True, append new measurements to existing table.
-        overwrite: Only used if append is False. If True, overwrite existing
-            table. If False, raise error if table already exists.
+        roi_table: ROI table name to iterate over (e.g 'FOV_ROI_table').
+            If left empty, measure over whole image.
+        append_to_table: If True, append new measurements to existing table.
     """
-    omezarr = open_ome_zarr_container(zarr_url)
-    label_image = omezarr.get_label(input_label_name, path=pyramid_level)
+    ome_zarr = open_ome_zarr_container(zarr_url)
+    label_image = ome_zarr.get_label(input_label_name, path=pyramid_level)
     parent_label_images = {
-        name: omezarr.get_label(name, path=pyramid_level) for name in parent_label_names
+        name: ome_zarr.get_label(name, path=pyramid_level)
+        for name in parent_label_names
     }
+
+    if ome_zarr.is_time_series:
+        raise NotImplementedError("Time series are not yet supported.")
 
     # find plate and well names
     plate_name = Path(Path(zarr_url).as_posix().split(".zarr/")[0]).stem
@@ -62,34 +66,66 @@ def measure_parent_label(
 
     logging.info(f"Calculating {output_table_name} for well {well_name}")
 
-    roi_table = omezarr.get_table(roi_table_name)
-
-    measurements = []
-    for roi in roi_table.rois():
-        # load label image
-        label_patch = label_image.get_roi(roi, mode="numpy", axes_order="zyx")
-        # load parent label images
-        parent_label_patches = {
-            name: image.get_roi(roi, mode="numpy", axes_order="zyx")
-            for name, image in parent_label_images.items()
-        }
-
-        measurement = measure_parents_ROI(
-            labels=label_patch,
-            parent_label_list=parent_label_patches.values(),
-            parent_prefix_list=parent_label_patches.keys(),
-            optional_columns={
-                "plate": plate_name,
-                "well": well_name,
-                "ROI": roi.name,
-            },
+    df_measurements_list = []
+    for parent_label_name, parent_label_image in parent_label_images.items():
+        # transform to resample label, in case of different resolutions
+        zoom_transform = ZoomTransform(
+            input_image=label_image,
+            target_image=parent_label_image,
+            order="nearest",  # Nearest neighbor interpolation for labels
         )
-        measurements.append(measurement)
 
-    df_measurements = pd.concat(measurements, axis=0)
+        if ome_zarr.is_3d:
+            axes_order = ["y", "x", "z"]
+        else:
+            axes_order = ["y", "x"]
 
-    if append and (output_table_name in omezarr.list_tables()):
-        feat_table_org = omezarr.get_table(output_table_name)
+        iterator = FeatureExtractorIterator(
+            input_image=parent_label_image,
+            input_label=label_image,
+            label_transforms=[zoom_transform],
+            axes_order=axes_order,
+        )
+
+        if roi_table != "":
+            # If a ROI table is provided, we load it and use it to further restrict
+            # the iteration to the ROIs defined in the table
+            table = ome_zarr.get_generic_roi_table(name=roi_table)
+            logging.info(f"ROI table retrieved: {table=}")
+            iterator = iterator.product(table)
+            logging.info(f"Iterator updated with ROI table: {iterator=}")
+
+        measurements = []
+        for parent_label_data, label_data, roi in iterator.iter_as_numpy():
+            logging.info(f"Processing ROI: {roi}")
+
+            # Squeeze singleton dimensions from label_data
+            label_data = np.squeeze(label_data)
+            parent_label_data = np.squeeze(parent_label_data)
+
+            roi_measurements = measure_parent_ROI(
+                labels=label_data,
+                parent_labels=parent_label_data,
+                parent_prefix=parent_label_name,
+                optional_columns={
+                    "plate": plate_name,
+                    "well": well_name,
+                    "ROI": roi.name,
+                },
+            )
+            measurements.append(roi_measurements)
+
+        df_measurements_list.append(pd.concat(measurements, axis=0))
+
+    # merge all parent measurements
+    df_measurements = pd.concat(df_measurements_list, axis=1)
+    # Remove duplicate columns
+    df_measurements = df_measurements.loc[
+        :, ~df_measurements.columns.duplicated(keep="first")
+    ]
+
+    if append_to_table and (output_table_name in ome_zarr.list_tables()):
+        feat_table_org = ome_zarr.get_table(output_table_name)
         df_org = feat_table_org.dataframe
         # Ensure same index (labels) to avoid misalignment
         if not df_org.index.equals(df_measurements.index):
@@ -103,48 +139,34 @@ def measure_parent_label(
             :, ~df_measurements.columns.duplicated(keep="last")
         ]
 
-    if append:
-        overwrite = True
-
     feat_table = FeatureTable(df_measurements, reference_label=input_label_name)
-    omezarr.add_table(output_table_name, feat_table, overwrite=overwrite)
+    ome_zarr.add_table(output_table_name, feat_table, overwrite=True)
 
 
-def measure_parents_ROI(
+def measure_parent_ROI(
     labels,
-    parent_label_list,
-    parent_prefix_list=None,
+    parent_labels,
+    parent_prefix,
     optional_columns: dict[str, Any] | None = None,
 ):
     """Returns dataframe with index of the parent-label of each label.
 
     Args:
         labels: Label image to be measured
-        parent_label_list: list of parent label images to measure
-        parent_prefix_list: prefix to use for annotations
-            (default: parent0, parent1, parent2,...)
-        optional_columns: list of any additional columns and their entries
-            (e.g. {'well':'C01'})
+        parent_label: lparent label image to measure
+        parent_prefix: prefix to use for annotation
 
     Returns:
         Pandas dataframe
     """
-    if optional_columns is None:
-        optional_columns = {}
-
-    # Set default prefix list
-    if parent_prefix_list is None:
-        parent_prefix_list = [f"parent{i}" for i in range(len(parent_label_list))]
-
     # Check if labels are empty (all zeros)
     unique_labels = np.unique(labels)[np.unique(labels) != 0]
     is_empty = len(unique_labels) == 0
 
     if is_empty:
-        # Create empty dataframe with all expected columns
-        columns = list(optional_columns.keys()) + [
-            f"{parent_prefix}_ID" for parent_prefix in parent_prefix_list
-        ]
+        # Create & return empty dataframe with all expected columns
+        columns = list(optional_columns.keys()) if optional_columns else []
+        columns.append(f"{parent_prefix}_ID")
         df = pd.DataFrame(columns=columns)
         df.index.name = "label"
         return df
@@ -154,33 +176,28 @@ def measure_parents_ROI(
     df.index.name = "label"
 
     # assign labels to parent-labels
-    df_parent_list = []
-    for parent_labels, parent_prefix in zip(
-        parent_label_list, parent_prefix_list, strict=True
-    ):
-        df_parent = pd.DataFrame(
-            regionprops_table_plus(
-                labels,
-                parent_labels,
-                properties=(
-                    [
-                        "label",
-                        "most_frequent_value",
-                    ]
-                ),
-            )
+    df_parent = pd.DataFrame(
+        regionprops_table_plus(
+            labels,
+            parent_labels,
+            properties=(
+                [
+                    "label",
+                    "most_frequent_value",
+                ]
+            ),
         )
-        df_parent = df_parent.rename(
-            columns={
-                "most_frequent_value": f"{parent_prefix}_ID",
-            }
-        )
-        df_parent.set_index("label", inplace=True)
-        df_parent_list.append(df_parent)
+    )
+    df_parent = df_parent.rename(
+        columns={
+            "most_frequent_value": f"{parent_prefix}_ID",
+        }
+    )
+    df_parent.set_index("label", inplace=True)
 
     # combine all
     df = pd.concat(
-        [df, *df_parent_list],
+        [df, df_parent],
         axis=1,
     )
     # add additional columns:

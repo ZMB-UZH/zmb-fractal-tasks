@@ -170,9 +170,7 @@
             "description": "Options for output",
             "properties": {
               "overwrite_illumination_profiles": {
-                "default": [
-                  true
-                ],
+                "default": true,
                 "title": "Overwrite Illumination Profiles",
                 "type": "boolean",
                 "description": "If True, overwrite existing illumination profiles of the same name. If False, an error is raised if illumination profiles already exist."
@@ -224,9 +222,7 @@
           "output_options": {
             "$ref": "#/$defs/OutputOptions",
             "default": {
-              "overwrite_illumination_profiles": [
-                true
-              ],
+              "overwrite_illumination_profiles": true,
               "overwrite_input_image": true,
               "new_well_subgroup_suffix": "illumination_corrected",
               "subtract_median_baseline": false
@@ -774,11 +770,13 @@
             "properties": {
               "input_label_name": {
                 "title": "Input Label Name",
-                "type": "string"
+                "type": "string",
+                "description": "Name of the label to be used for measurement."
               },
               "output_table_name": {
                 "title": "Output Table Name",
-                "type": "string"
+                "type": "string",
+                "description": "Name of corresponding output feature table."
               }
             },
             "required": [
@@ -794,7 +792,8 @@
               "use_all_channels": {
                 "default": true,
                 "title": "Use All Channels",
-                "type": "boolean"
+                "type": "boolean",
+                "description": "If True, all channels are selected."
               },
               "mode": {
                 "default": "label",
@@ -804,14 +803,16 @@
                   "index"
                 ],
                 "title": "Mode",
-                "type": "string"
+                "type": "string",
+                "description": "Specifies how to interpret the identifier. Can be \"label\", \"wavelength_id\", or \"index\" (must be an integer)."
               },
               "identifiers": {
                 "items": {
                   "type": "string"
                 },
                 "title": "Identifiers",
-                "type": "array"
+                "type": "array",
+                "description": "Unique identifier for the channel. This can be a channel label, wavelength ID, or index."
               }
             },
             "title": "MeasurementChannels",
@@ -863,9 +864,10 @@
             "description": "List of regionprops intensity properties to measure."
           },
           "roi_table": {
+            "default": "FOV_ROI_table",
             "title": "Roi Table",
             "type": "string",
-            "description": "Missing description"
+            "description": "ROI table name to iterate over (e.g 'FOV_ROI_table'). If left empty, measure over whole image."
           },
           "append_to_table": {
             "default": true,
@@ -928,23 +930,17 @@
             "type": "string",
             "description": "Resolution level of the label image to use for calculations. Choose `0` for full resolution. Only tested for 2D images at level 0."
           },
-          "roi_table_name": {
+          "roi_table": {
             "default": "FOV_ROI_table",
-            "title": "Roi Table Name",
+            "title": "Roi Table",
             "type": "string",
-            "description": "Name of the ROI table to iterate over."
+            "description": "ROI table name to iterate over (e.g 'FOV_ROI_table'). If left empty, measure over whole image."
           },
-          "append": {
+          "append_to_table": {
             "default": true,
-            "title": "Append",
+            "title": "Append To Table",
             "type": "boolean",
             "description": "If True, append new measurements to existing table."
-          },
-          "overwrite": {
-            "default": false,
-            "title": "Overwrite",
-            "type": "boolean",
-            "description": "Only used if append is False. If True, overwrite existing table. If False, raise error if table already exists."
           }
         },
         "required": [
@@ -1060,32 +1056,38 @@
                   "no_normalization"
                 ],
                 "title": "Mode",
-                "type": "string"
+                "type": "string",
+                "description": "Normalization mode. 'default': Data is normalized so 0.0=1st percentile and 1.0=99th percentile of image intensities. 'no_normalization': No normalization is applied. 'custom': You can either provide your own rescaling percentiles or fixed rescaling upper and lower bound integers. 'omero': The \"start\" and \"end\" values from the omero channels in the zarr file are used for upper and lower bounds. 'histogram': A precalculated histogram is used for normalization. Percentiles need to be provided."
               },
               "lower_percentile": {
                 "maximum": 100,
                 "minimum": 0,
                 "title": "Lower Percentile",
-                "type": "number"
+                "type": "number",
+                "description": "Specify a custom lower-bound percentile for rescaling as a float value between 0 and 100. You can only specify percentiles or bounds, not both."
               },
               "upper_percentile": {
                 "maximum": 100,
                 "minimum": 0,
                 "title": "Upper Percentile",
-                "type": "number"
+                "type": "number",
+                "description": "Specify a custom upper-bound percentile for rescaling as a float value between 0 and 100. You can only specify percentiles or bounds, not both."
               },
               "lower_bound": {
                 "title": "Lower Bound",
-                "type": "integer"
+                "type": "integer",
+                "description": "Explicit lower bound value to rescale the image at. Needs to be an integer, e.g. 100. You can only specify percentiles or bounds, not both."
               },
               "upper_bound": {
                 "title": "Upper Bound",
-                "type": "integer"
+                "type": "integer",
+                "description": "Explicit upper bound value to rescale the image at. Needs to be an integer, e.g. 2000. You can only specify percentiles or bounds, not both."
               },
               "histogram_name": {
                 "default": "channel_histograms",
                 "title": "Histogram Name",
-                "type": "string"
+                "type": "string",
+                "description": "Name of the histogram to use for rescaling in `histogram` mode. Needs to be a string, e.g. \"channel_histograms\"."
               }
             },
             "title": "CustomNormalizer",
@@ -1096,15 +1098,18 @@
             "properties": {
               "wavelength_id": {
                 "title": "Wavelength Id",
-                "type": "string"
+                "type": "string",
+                "description": "Unique ID for the channel wavelength, e.g. `A01_C01`. Can only be specified if label is not set."
               },
               "label": {
                 "title": "Label",
-                "type": "string"
+                "type": "string",
+                "description": "Name of the channel. Can only be specified if wavelength_id is not set."
               },
               "normalize": {
                 "$ref": "#/$defs/CustomNormalizer",
-                "title": "Normalize"
+                "title": "Normalize",
+                "description": "Set image normalization method and parameters."
               }
             },
             "title": "NormalizedChannelInputModel",
@@ -1127,7 +1132,7 @@
           "channel": {
             "$ref": "#/$defs/NormalizedChannelInputModel",
             "title": "Channel",
-            "description": "Channel for segmentation; requires either `wavelength_id` (e.g. `A01_C01`) or `label` (e.g. `DAPI`), but not both. Also contains normalization options: 'default': Data is normalized so 0.0=1st percentile and 1.0=99th percentile of image intensities. 'no_normalization': No normalization is applied. 'custom': You can either provide your own rescaling percentiles or fixed rescaling upper and lower bound integers. 'omero': The \"start\" and \"end\" values from the omero channels in the zarr file are used for upper and lower bounds. 'histogram': A precalculated histogram is used for normalization. Percentiles need to be provided."
+            "description": "Channel for segmentation; requires either `wavelength_id` (e.g. `A01_C01`) or `label` (e.g. `DAPI`), but not both. Also contains normalization options."
           },
           "input_ROI_table": {
             "default": "FOV_ROI_table",
@@ -1221,32 +1226,38 @@
                   "no_normalization"
                 ],
                 "title": "Mode",
-                "type": "string"
+                "type": "string",
+                "description": "Normalization mode. 'default': Data is normalized so 0.0=1st percentile and 1.0=99th percentile of image intensities. 'no_normalization': No normalization is applied. 'custom': You can either provide your own rescaling percentiles or fixed rescaling upper and lower bound integers. 'omero': The \"start\" and \"end\" values from the omero channels in the zarr file are used for upper and lower bounds. 'histogram': A precalculated histogram is used for normalization. Percentiles need to be provided."
               },
               "lower_percentile": {
                 "maximum": 100,
                 "minimum": 0,
                 "title": "Lower Percentile",
-                "type": "number"
+                "type": "number",
+                "description": "Specify a custom lower-bound percentile for rescaling as a float value between 0 and 100. You can only specify percentiles or bounds, not both."
               },
               "upper_percentile": {
                 "maximum": 100,
                 "minimum": 0,
                 "title": "Upper Percentile",
-                "type": "number"
+                "type": "number",
+                "description": "Specify a custom upper-bound percentile for rescaling as a float value between 0 and 100. You can only specify percentiles or bounds, not both."
               },
               "lower_bound": {
                 "title": "Lower Bound",
-                "type": "integer"
+                "type": "integer",
+                "description": "Explicit lower bound value to rescale the image at. Needs to be an integer, e.g. 100. You can only specify percentiles or bounds, not both."
               },
               "upper_bound": {
                 "title": "Upper Bound",
-                "type": "integer"
+                "type": "integer",
+                "description": "Explicit upper bound value to rescale the image at. Needs to be an integer, e.g. 2000. You can only specify percentiles or bounds, not both."
               },
               "histogram_name": {
                 "default": "channel_histograms",
                 "title": "Histogram Name",
-                "type": "string"
+                "type": "string",
+                "description": "Name of the histogram to use for rescaling in `histogram` mode. Needs to be a string, e.g. \"channel_histograms\"."
               }
             },
             "title": "CustomNormalizer",
@@ -1257,15 +1268,18 @@
             "properties": {
               "wavelength_id": {
                 "title": "Wavelength Id",
-                "type": "string"
+                "type": "string",
+                "description": "Unique ID for the channel wavelength, e.g. `A01_C01`. Can only be specified if label is not set."
               },
               "label": {
                 "title": "Label",
-                "type": "string"
+                "type": "string",
+                "description": "Name of the channel. Can only be specified if wavelength_id is not set."
               },
               "normalize": {
                 "$ref": "#/$defs/CustomNormalizer",
-                "title": "Normalize"
+                "title": "Normalize",
+                "description": "Set image normalization method and parameters."
               }
             },
             "title": "NormalizedChannelInputModel",
