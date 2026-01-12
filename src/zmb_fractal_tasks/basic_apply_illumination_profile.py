@@ -65,12 +65,12 @@ def basic_apply_illumination_profile(
     roi_table = omezarr.get_table("FOV_ROI_table")
 
     # TODO: handle case where no channel names are available?
-    channels = source_image.channel_labels
+    channels = source_image.wavelength_ids
 
     # Process each channel & FOV
     for channel in channels:
         # load illumination profiles
-        channel_idx = source_image.channel_labels.index(channel)
+        channel_idx = source_image.wavelength_ids.index(channel)
         folder_path = Path(init_args.illumination_profiles_folder) / channel
         flatfield = np.load(folder_path / "flatfield.npy")
         darkfield = np.load(folder_path / "darkfield.npy")

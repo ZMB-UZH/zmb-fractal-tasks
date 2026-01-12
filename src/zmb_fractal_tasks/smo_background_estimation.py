@@ -46,14 +46,11 @@ def smo_background_estimation(
     omezarr = open_ome_zarr_container(zarr_url)
     source_image = omezarr.get_image()
 
-    # TODO: support 3D / time-lapse?
-    if source_image.dimensions.has_axis("z"):
-        if source_image.dimensions.get("z") > 1:
-            raise ValueError("SMO background estimation does not support 3D images.")
-    if source_image.dimensions.has_axis("t"):
+    # TODO: support time-lapses?
+    if source_image.is_time_series:
         if source_image.dimensions.get("t") > 1:
             raise ValueError(
-                "SMO background estimation does not support time-lapse images."
+                "SMO background estimation does not yet support time-lapse images."
             )
     # TODO: Add options for iterating & masking
     roi_table = omezarr.get_table("FOV_ROI_table")

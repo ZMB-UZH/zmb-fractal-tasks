@@ -41,7 +41,7 @@ def measure_features(
         "intensity_std",
         "intensity_total",
     ],
-    roi_table: Optional[str] = "FOV_ROI_table",
+    roi_table: Optional[str] = None,
     append_to_table: bool = True,
 ) -> None:
     """Docstring for measrue_features_new
