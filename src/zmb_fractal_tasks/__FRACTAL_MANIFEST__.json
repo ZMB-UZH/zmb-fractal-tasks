@@ -2,82 +2,6 @@
   "manifest_version": "2",
   "task_list": [
     {
-      "name": "Aggregate all channel histograms for plate",
-      "category": "Measurement",
-      "tags": [
-        "Percentiles",
-        "Histogram",
-        "Normalization"
-      ],
-      "type": "non_parallel",
-      "executable_non_parallel": "aggregate_plate_histograms.py",
-      "meta_non_parallel": {
-        "cpus_per_task": 1,
-        "mem": 4000
-      },
-      "args_schema_non_parallel": {
-        "additionalProperties": false,
-        "properties": {
-          "zarr_urls": {
-            "items": {
-              "type": "string"
-            },
-            "title": "Zarr Urls",
-            "type": "array",
-            "description": "List of paths or urls to the individual OME-Zarr images to be processed. (Standard argument for Fractal tasks, managed by Fractal server)."
-          },
-          "zarr_dir": {
-            "title": "Zarr Dir",
-            "type": "string",
-            "description": "Not used for this task. (Standard argument for Fractal tasks, managed by Fractal server)."
-          },
-          "histogram_input_name": {
-            "default": "channel_histograms",
-            "title": "Histogram Input Name",
-            "type": "string",
-            "description": "Table name of the histogram table to be combined."
-          },
-          "histogram_output_name": {
-            "default": "channel_histograms_plate",
-            "title": "Histogram Output Name",
-            "type": "string",
-            "description": "Table name of the output combined histogram."
-          },
-          "update_display_range": {
-            "default": true,
-            "title": "Update Display Range",
-            "type": "boolean",
-            "description": "If True, update the display range of the image. (Saved in the omero metadata of the zarr file)."
-          },
-          "display_range_percentiles": {
-            "default": [
-              0.5,
-              99.5
-            ],
-            "items": {
-              "type": "number"
-            },
-            "title": "Display Range Percentiles",
-            "type": "array",
-            "description": "Percentiles (e.g. [0.5, 99.5]) to use for display range calculation. (Only used if update_display_range is True)."
-          },
-          "overwrite": {
-            "default": true,
-            "title": "Overwrite",
-            "type": "boolean",
-            "description": "If True, overwrite existing histogram table."
-          }
-        },
-        "required": [
-          "zarr_urls",
-          "zarr_dir"
-        ],
-        "type": "object",
-        "title": "AggregatePlateHistograms"
-      },
-      "docs_info": "## aggregate_plate_histograms\nFind all channel histograms in a plate and combine them.\n\nIn each image, a new table is created with the combined histograms.\nThe new table is named as the input histogram table with suffix \"_plate\".\n"
-    },
-    {
       "name": "BaSiC: Calculate and apply illumination correction for plate",
       "input_types": {
         "illumination_corrected": false
@@ -109,107 +33,101 @@
               "autosegment": {
                 "default": false,
                 "title": "Autosegment",
-                "type": "boolean"
+                "type": "boolean",
+                "description": "When not False, automatically segment the image before fitting. When True, threshold_otsu from scikit-image is used and the brighter pixels are taken.When a callable is given, it is used as the segmentation function."
               },
               "autosegment_margin": {
                 "default": 10,
                 "title": "Autosegment Margin",
-                "type": "integer"
+                "type": "integer",
+                "description": "Margin of the segmentation mask to the thresholded region."
               },
               "epsilon": {
                 "default": 0.1,
                 "title": "Epsilon",
-                "type": "number"
+                "type": "number",
+                "description": "Weight regularization term."
               },
               "max_iterations": {
                 "default": 500,
                 "title": "Max Iterations",
-                "type": "integer"
+                "type": "integer",
+                "description": "Maximum number of iterations for single optimization."
               },
               "max_mu_coef": {
                 "default": 10000000.0,
                 "title": "Max Mu Coef",
-                "type": "number"
+                "type": "number",
+                "description": "Maximum allowed value of mu, divided by the initial value."
               },
               "max_reweight_iterations": {
                 "default": 10,
                 "title": "Max Reweight Iterations",
-                "type": "integer"
+                "type": "integer",
+                "description": "Maximum number of reweighting iterations."
               },
               "max_reweight_iterations_baseline": {
                 "default": 5,
                 "title": "Max Reweight Iterations Baseline",
-                "type": "integer"
+                "type": "integer",
+                "description": "Maximum number of reweighting iterations for baseline."
               },
               "max_workers": {
                 "default": 8,
                 "title": "Max Workers",
-                "type": "integer"
+                "type": "integer",
+                "description": "Maximum number of threads used for processing."
               },
               "mu_coef": {
                 "default": 12.5,
                 "title": "Mu Coef",
-                "type": "number"
+                "type": "number",
+                "description": "Coefficient for initial mu value."
               },
               "optimization_tol": {
                 "default": 0.001,
                 "title": "Optimization Tol",
-                "type": "number"
+                "type": "number",
+                "description": "Optimization tolerance."
               },
               "optimization_tol_diff": {
                 "default": 0.01,
                 "title": "Optimization Tol Diff",
-                "type": "number"
+                "type": "number",
+                "description": "Optimization tolerance for update diff."
               },
               "reweighting_tol": {
                 "default": 0.01,
                 "title": "Reweighting Tol",
-                "type": "number"
+                "type": "number",
+                "description": "Reweighting tolerance in mean absolute difference of images."
               },
               "rho": {
                 "default": 1.5,
                 "title": "Rho",
-                "type": "number"
+                "type": "number",
+                "description": "Parameter rho for mu update."
               },
               "sort_intensity": {
                 "default": false,
                 "title": "Sort Intensity",
-                "type": "boolean"
+                "type": "boolean",
+                "description": "Whether or not to sort the intensities of the image."
               },
               "sparse_cost_darkfield": {
                 "default": 0.01,
                 "title": "Sparse Cost Darkfield",
-                "type": "number"
+                "type": "number",
+                "description": "Weight of the darkfield sparse term in the Lagrangian."
               },
               "working_size": {
                 "default": 128,
                 "title": "Working Size",
-                "type": "integer"
+                "type": "integer",
+                "description": "Size for running computations. None means no rescaling."
               }
             },
             "title": "AdvancedBaSiCParameters",
-            "type": "object"
-          },
-          "AdvancedCorrectionParameters": {
-            "description": "Parameters for applying illumination correction",
-            "properties": {
-              "overwrite_input_image": {
-                "default": true,
-                "title": "Overwrite Input Image",
-                "type": "boolean"
-              },
-              "new_well_subgroup_suffix": {
-                "default": "illumination_corrected",
-                "title": "New Well Subgroup Suffix",
-                "type": "string"
-              },
-              "subtract_median_baseline": {
-                "default": false,
-                "title": "Subtract Median Baseline",
-                "type": "boolean"
-              }
-            },
-            "title": "AdvancedCorrectionParameters",
             "type": "object"
           },
           "CoreBaSiCParameters": {
@@ -218,29 +136,67 @@
               "n_images_sampled": {
                 "default": 256,
                 "title": "N Images Sampled",
-                "type": "integer"
+                "type": "integer",
+                "description": "Number of images to sample for illumination correction. If there are less images available than n_images, all available images will be used."
               },
               "get_darkfield": {
                 "default": false,
                 "title": "Get Darkfield",
-                "type": "boolean"
+                "type": "boolean",
+                "description": "If True, calculate darkfield correction."
               },
               "smoothness_flatfield": {
                 "default": 1.0,
                 "title": "Smoothness Flatfield",
-                "type": "number"
+                "type": "number",
+                "description": "Smoothing parameter for flatfield. (Weight of the flatfield term in the Lagrangian.)"
               },
               "smoothness_darkfield": {
                 "default": 1.0,
                 "title": "Smoothness Darkfield",
-                "type": "number"
+                "type": "number",
+                "description": "Smoothing parameter for darkfield. (Weight of the darkfield term in the Lagrangian.)"
               },
               "random_seed": {
                 "title": "Random Seed",
-                "type": "integer"
+                "type": "integer",
+                "description": "Integer random seed to initialize random number generator. None will result in non-reproducibel outputs."
               }
             },
             "title": "CoreBaSiCParameters",
+            "type": "object"
+          },
+          "OutputOptions": {
+            "description": "Options for output",
+            "properties": {
+              "overwrite_illumination_profiles": {
+                "default": [
+                  true
+                ],
+                "title": "Overwrite Illumination Profiles",
+                "type": "boolean",
+                "description": "If True, overwrite existing illumination profiles of the same name. If False, an error is raised if illumination profiles already exist."
+              },
+              "overwrite_input_image": {
+                "default": true,
+                "title": "Overwrite Input Image",
+                "type": "boolean",
+                "description": "If True, overwrite the input image. If False, create a new well sub-group to store the corrected image."
+              },
+              "new_well_subgroup_suffix": {
+                "default": "illumination_corrected",
+                "title": "New Well Subgroup Suffix",
+                "type": "string",
+                "description": "Suffix to add to original well sub-group name. Only used if overwrite_input_image is False."
+              },
+              "subtract_median_baseline": {
+                "default": false,
+                "title": "Subtract Median Baseline",
+                "type": "boolean",
+                "description": "If True, do a background subtraction by subtracting the median of all baseline values from the corrected image."
+              }
+            },
+            "title": "OutputOptions",
             "type": "object"
           }
         },
@@ -265,11 +221,18 @@
             "type": "string",
             "description": "Name of folder to save illumination profiles in. The folder will be created inside zarr_dir."
           },
-          "overwrite_illumination_profiles": {
-            "default": true,
-            "title": "Overwrite Illumination Profiles",
-            "type": "boolean",
-            "description": "If True, overwrite existing illumination profiles of the same name. If False, an error is raised if illumination profiles already exist."
+          "output_options": {
+            "$ref": "#/$defs/OutputOptions",
+            "default": {
+              "overwrite_illumination_profiles": [
+                true
+              ],
+              "overwrite_input_image": true,
+              "new_well_subgroup_suffix": "illumination_corrected",
+              "subtract_median_baseline": false
+            },
+            "title": "Output Options",
+            "description": "Options for output."
           },
           "core_basic_parameters": {
             "$ref": "#/$defs/CoreBaSiCParameters",
@@ -305,16 +268,6 @@
             },
             "title": "Advanced Basic Parameters",
             "description": "Advanced parameters for BaSiC illumination correction. See https://basicpy.readthedocs.io/en/latest/api.html"
-          },
-          "advanced_correction_parameters": {
-            "$ref": "#/$defs/AdvancedCorrectionParameters",
-            "default": {
-              "overwrite_input_image": true,
-              "new_well_subgroup_suffix": "illumination_corrected",
-              "subtract_median_baseline": false
-            },
-            "title": "Advanced Correction Parameters",
-            "description": "Parameters for applying illumination correction."
           }
         },
         "required": [
@@ -376,86 +329,7 @@
         "type": "object",
         "title": "BasicApplyIlluminationProfile"
       },
-      "docs_info": "## basic_correct_illumination_plate_init\nCalculate illumination profiles for all channels in a plate using BaSiC.\n\nSee https://basicpy.readthedocs.io for more information on BaSiC.\nThis task calculates illumination correction profiles based on a random\nsample of FOVs for each channel.\nNOTE: This assumes that all FOVs in the plate have the same dimensions.\n\nThe calculated illumination profiles are saved in the specified folder,\nand can be applied to images using the 'Basic: Apply illumination profile'\ntask.\n## basic_apply_illumination_profile\nApplies illumination correction to the OME-Zarr.\n\nUses illumination profiles calculated using the 'BaSiC: Calculate\nillumination profile for plate' task.\n"
-    },
-    {
-      "name": "Calculate channel-histograms for each image",
-      "category": "Measurement",
-      "tags": [
-        "Percentiles",
-        "Histogram",
-        "Normalization"
-      ],
-      "type": "parallel",
-      "executable_parallel": "calculate_histograms.py",
-      "meta_parallel": {
-        "cpus_per_task": 1,
-        "mem": 4000
-      },
-      "args_schema_parallel": {
-        "additionalProperties": false,
-        "properties": {
-          "zarr_url": {
-            "title": "Zarr Url",
-            "type": "string",
-            "description": "Absolute path to the OME-Zarr image. (standard argument for Fractal tasks, managed by Fractal server)."
-          },
-          "pyramid_level": {
-            "default": "0",
-            "title": "Pyramid Level",
-            "type": "string",
-            "description": "Resolution level to calculate histograms on. Choose `0` for full resolution."
-          },
-          "input_ROI_table": {
-            "default": "FOV_ROI_table",
-            "title": "Input Roi Table",
-            "type": "string",
-            "description": "Name of the ROI table over which the task loops"
-          },
-          "bin_width": {
-            "default": 1,
-            "title": "Bin Width",
-            "type": "number",
-            "description": "Width of the histogram bins. A bin-width of 1 is suitable for integer-valued images (e.g. 8-bit or 16-bit images)."
-          },
-          "update_display_range": {
-            "default": true,
-            "title": "Update Display Range",
-            "type": "boolean",
-            "description": "If True, update the display range of the image. (Saved in the omero metadata of the zarr file)."
-          },
-          "display_range_percentiles": {
-            "default": [
-              0.5,
-              99.5
-            ],
-            "items": {
-              "type": "number"
-            },
-            "title": "Display Range Percentiles",
-            "type": "array",
-            "description": "Percentiles (e.g. [0.5, 99.5]) to use for display range calculation. (Only used if update_display_range is True)."
-          },
-          "histogram_name": {
-            "default": "channel_histograms",
-            "title": "Histogram Name",
-            "type": "string",
-            "description": "Name of the output histogram table."
-          },
-          "overwrite": {
-            "default": true,
-            "title": "Overwrite",
-            "type": "boolean",
-            "description": "If True, overwrite existing histogram table."
-          }
-        },
-        "required": [
-          "zarr_url"
-        ],
-        "type": "object",
-        "title": "CalculateHistograms"
-      },
-      "docs_info": "## calculate_histograms\nCalculate channel histograms of image.\n"
+      "docs_info": "## basic_correct_illumination_plate_init\nCalculate illumination profiles and correct channels using BaSiC.\n\nSee https://basicpy.readthedocs.io for more information on BaSiC.\nThis task calculates illumination correction profiles based on a random\nsample of FOVs of the entire plate for each channel. It stores the\ncalculated illumination profiles in a specified folder and corrects each\nimage in the plate using these profiles.\nNOTE: This assumes that all FOVs in the plate have the same dimensions.\n## basic_apply_illumination_profile\nApplies illumination correction to the OME-Zarr.\n\nUses illumination profiles calculated using the 'BaSiC: Calculate\nillumination profile for plate' task.\n"
     },
     {
       "name": "Merge acquisitions along channel axis",
@@ -559,7 +433,7 @@
         "type": "object",
         "title": "CombineAcquisitionsParallel"
       },
-      "docs_info": "## combine_acquisitions_init\nCombine multiple acquisitions of a plate into a single acquisition.\n\nIf there are multiple acquisitions for a given well, this task will\ncombine them into a single acquisition by concatenating the channels.\n## combine_acquisitions_parallel\nCombine multiple acquisitions into a single acquisition.\n"
+      "docs_info": "## combine_acquisitions_init\nCombine multiple acquisitions of a plate into a single acquisition.\n\nIf there are multiple acquisitions for a given well, this task will\ncombine them into a single acquisition by concatenating the channels.\n\nTables will be copied from the first acquisition. Label images are not\nhandled in this version.\n## combine_acquisitions_parallel\nCombine multiple acquisitions into a single acquisition.\n"
     },
     {
       "name": "Delete labels from OME-Zarr image",
@@ -606,7 +480,9 @@
       "tags": [
         "Percentiles",
         "Histogram",
-        "Normalization"
+        "Normalization",
+        "Contrast",
+        "Auto Contrast"
       ],
       "type": "parallel",
       "executable_parallel": "update_display_range.py",
@@ -725,6 +601,161 @@
       "docs_info": "## expand_segmentation\nExpand the labels on the ROIs of a single OME-Zarr image.\n"
     },
     {
+      "name": "Histograms: Calculate channel-histograms for each image",
+      "category": "Measurement",
+      "tags": [
+        "Percentiles",
+        "Histogram",
+        "Normalization"
+      ],
+      "type": "parallel",
+      "executable_parallel": "histogram_calculate.py",
+      "meta_parallel": {
+        "cpus_per_task": 1,
+        "mem": 4000
+      },
+      "args_schema_parallel": {
+        "additionalProperties": false,
+        "properties": {
+          "zarr_url": {
+            "title": "Zarr Url",
+            "type": "string",
+            "description": "Absolute path to the OME-Zarr image. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "pyramid_level": {
+            "default": "0",
+            "title": "Pyramid Level",
+            "type": "string",
+            "description": "Resolution level to calculate histograms on. (E.g. `0` for full resolution)."
+          },
+          "input_ROI_table": {
+            "default": "FOV_ROI_table",
+            "title": "Input Roi Table",
+            "type": "string",
+            "description": "Name of the ROI table over which the task loops. If left empty, the whole image is used."
+          },
+          "bin_width": {
+            "default": 1,
+            "title": "Bin Width",
+            "type": "number",
+            "description": "Width of the histogram bins. A bin-width of 1 is suitable for integer-valued images (e.g. 8-bit or 16-bit images)."
+          },
+          "update_display_range": {
+            "default": true,
+            "title": "Update Display Range",
+            "type": "boolean",
+            "description": "If True, update the display range of the image. (Saved in the omero metadata of the zarr file)."
+          },
+          "display_range_percentiles": {
+            "default": [
+              0.5,
+              99.5
+            ],
+            "items": {
+              "type": "number"
+            },
+            "title": "Display Range Percentiles",
+            "type": "array",
+            "description": "Percentiles (e.g. [0.5, 99.5]) to use for display range calculation. (Only used if update_display_range is True)."
+          },
+          "histogram_name": {
+            "default": "channel_histograms",
+            "title": "Histogram Name",
+            "type": "string",
+            "description": "Name of the output histogram table."
+          },
+          "overwrite": {
+            "default": true,
+            "title": "Overwrite",
+            "type": "boolean",
+            "description": "If True, overwrite existing histogram table."
+          }
+        },
+        "required": [
+          "zarr_url"
+        ],
+        "type": "object",
+        "title": "HistogramCalculate"
+      },
+      "docs_info": "## histogram_calculate\nCalculate channel histograms of image.\n\nCalculates intensity histograms for each channel of the image,\nby looping over ROIs defined in the input ROI table. The resulting\nhistograms are saved in a new table in the OME-Zarr.\n"
+    },
+    {
+      "name": "Histograms: Aggregate plate-histograms",
+      "category": "Measurement",
+      "tags": [
+        "Percentiles",
+        "Histogram",
+        "Normalization"
+      ],
+      "type": "non_parallel",
+      "executable_non_parallel": "histogram_aggregate_plate.py",
+      "meta_non_parallel": {
+        "cpus_per_task": 1,
+        "mem": 4000
+      },
+      "args_schema_non_parallel": {
+        "additionalProperties": false,
+        "properties": {
+          "zarr_urls": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Zarr Urls",
+            "type": "array",
+            "description": "List of paths or urls to the individual OME-Zarr images to be processed. (Standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "zarr_dir": {
+            "title": "Zarr Dir",
+            "type": "string",
+            "description": "Not used for this task. (Standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "histogram_input_name": {
+            "default": "channel_histograms",
+            "title": "Histogram Input Name",
+            "type": "string",
+            "description": "Table name of the histogram table to be combined. (Output of the \"Histograms: Calculate channel-histograms for each image\" task)."
+          },
+          "histogram_output_name": {
+            "default": "channel_histograms_plate",
+            "title": "Histogram Output Name",
+            "type": "string",
+            "description": "Table name of the output combined histogram."
+          },
+          "update_display_range": {
+            "default": true,
+            "title": "Update Display Range",
+            "type": "boolean",
+            "description": "If True, update the display range of the images. (Saved in the omero metadata of the zarr file)."
+          },
+          "display_range_percentiles": {
+            "default": [
+              0.5,
+              99.5
+            ],
+            "items": {
+              "type": "number"
+            },
+            "title": "Display Range Percentiles",
+            "type": "array",
+            "description": "Percentiles (e.g. [0.5, 99.5]) to use for display range calculation. (Only used if update_display_range is True)."
+          },
+          "overwrite": {
+            "default": true,
+            "title": "Overwrite",
+            "type": "boolean",
+            "description": "If True, overwrite existing histogram table."
+          }
+        },
+        "required": [
+          "zarr_urls",
+          "zarr_dir"
+        ],
+        "type": "object",
+        "title": "HistogramAggregatePlate"
+      },
+      "docs_info": "## histogram_aggregate_plate\nCombine all histograms in a plate and write to table in each image.\n\nAll channel intensity histograms in each image are loaded and combined. The\nresulting combined histograms are then saved in a new table in each image.\n\nONE FIRST NEEDS TO RUN THE \"Histograms: Calculate channel-histograms for each image\"\nTASK!\n"
+    },
+    {
       "name": "Measure features",
       "category": "Measurement",
       "tags": [
@@ -738,19 +769,52 @@
       },
       "args_schema_parallel": {
         "$defs": {
-          "ChannelInputModel": {
-            "description": "A channel which is specified by either `wavelength_id` or `label`.",
+          "LabelInput": {
+            "description": "Input label configuration.",
             "properties": {
-              "wavelength_id": {
-                "title": "Wavelength Id",
+              "input_label_name": {
+                "title": "Input Label Name",
                 "type": "string"
               },
-              "label": {
-                "title": "Label",
+              "output_table_name": {
+                "title": "Output Table Name",
                 "type": "string"
               }
             },
-            "title": "ChannelInputModel",
+            "required": [
+              "input_label_name",
+              "output_table_name"
+            ],
+            "title": "LabelInput",
+            "type": "object"
+          },
+          "MeasurementChannels": {
+            "description": "Channel configuration.",
+            "properties": {
+              "use_all_channels": {
+                "default": true,
+                "title": "Use All Channels",
+                "type": "boolean"
+              },
+              "mode": {
+                "default": "label",
+                "enum": [
+                  "label",
+                  "wavelength_id",
+                  "index"
+                ],
+                "title": "Mode",
+                "type": "string"
+              },
+              "identifiers": {
+                "items": {
+                  "type": "string"
+                },
+                "title": "Identifiers",
+                "type": "array"
+              }
+            },
+            "title": "MeasurementChannels",
             "type": "object"
           }
         },
@@ -761,33 +825,23 @@
             "type": "string",
             "description": "Path or url to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
           },
-          "output_table_name": {
-            "title": "Output Table Name",
-            "type": "string",
-            "description": "Name of the output table."
-          },
-          "input_label_name": {
-            "title": "Input Label Name",
-            "type": "string",
-            "description": "Name of the label that contains the seeds. Needs to exist in OME-Zarr file."
-          },
-          "channels_to_include": {
+          "input_labels": {
             "items": {
-              "$ref": "#/$defs/ChannelInputModel"
+              "$ref": "#/$defs/LabelInput"
             },
-            "title": "Channels To Include",
+            "title": "Input Labels",
             "type": "array",
-            "description": "List of channels to include for intensity and texture measurements. Use the channel label to indicate single channels. If None, all channels are included."
+            "description": "Label(s) to be measured."
           },
-          "channels_to_exclude": {
-            "items": {
-              "$ref": "#/$defs/ChannelInputModel"
-            },
-            "title": "Channels To Exclude",
-            "type": "array",
-            "description": "List of channels to exclude for intensity and texture measurements. Use the channel label to indicate single channels. If None, no channels are excluded."
+          "channels_to_measure": {
+            "$ref": "#/$defs/MeasurementChannels",
+            "title": "Channels To Measure",
+            "description": "Channels for intensity measurements."
           },
           "structure_props": {
+            "default": [
+              "area"
+            ],
             "items": {
               "type": "string"
             },
@@ -796,47 +850,39 @@
             "description": "List of regionprops structure properties to measure."
           },
           "intensity_props": {
+            "default": [
+              "intensity_mean",
+              "intensity_std",
+              "intensity_total"
+            ],
             "items": {
               "type": "string"
             },
             "title": "Intensity Props",
             "type": "array",
-            "description": "List of regionprops intensity properties to measure. ROI_table_name: Name of the ROI table to process."
+            "description": "List of regionprops intensity properties to measure."
           },
-          "pyramid_level": {
-            "default": "0",
-            "title": "Pyramid Level",
+          "roi_table": {
+            "title": "Roi Table",
             "type": "string",
-            "description": "Resolution level of the label image to calculate features on. Choose `0` for full resolution. Only tested for 2D images at level 0."
+            "description": "Missing description"
           },
-          "roi_table_name": {
-            "default": "FOV_ROI_table",
-            "title": "Roi Table Name",
-            "type": "string",
-            "description": "Name of the ROI table to iterate over."
-          },
-          "append": {
+          "append_to_table": {
             "default": true,
-            "title": "Append",
+            "title": "Append To Table",
             "type": "boolean",
-            "description": "If True, append new measurements to existing table."
-          },
-          "overwrite": {
-            "default": false,
-            "title": "Overwrite",
-            "type": "boolean",
-            "description": "Only used if append is False. If True, overwrite existing table. If False, raise error if table already exists."
+            "description": "If True, append new measurements to existing table. If False, overwrite existing table."
           }
         },
         "required": [
           "zarr_url",
-          "output_table_name",
-          "input_label_name"
+          "input_labels",
+          "channels_to_measure"
         ],
         "type": "object",
         "title": "MeasureFeatures"
       },
-      "docs_info": "## measure_features\nCalculate features based on label image and intensity image (optional).\n\nTakes a label image and an optional intensity image and calculates\nmorphology, intensity and texture features in 2D. Writes results to a\nfeature table in the OME-Zarr file. If a feature table with the same name\nalready exists, the features will be added to the existing table.\n"
+      "docs_info": "## measure_features\nDocstring for measrue_features_new\n"
     },
     {
       "name": "Measure parent label",
@@ -1338,13 +1384,13 @@
             "default": 0.0,
             "title": "Sigma",
             "type": "number",
-            "description": "Standard deviation for Gaussian kernel of pre-filter."
+            "description": "Standard deviation for Gaussian pre-filter to reduce noise."
           },
           "size": {
             "default": 7,
             "title": "Size",
             "type": "integer",
-            "description": "Averaging window size in pixels. Should be smaller than foreground objects."
+            "description": "Window size in pixels to average gradient. Should be smaller than foreground objects & background regions."
           },
           "subtract_background": {
             "default": false,
@@ -1356,7 +1402,7 @@
             "default": true,
             "title": "Overwrite Input Image",
             "type": "boolean",
-            "description": "If True, overwrite the input image. If False, create a new well sub-group to store the corrected image."
+            "description": "If True, overwrite the input image. If False, create a new well sub-group to store the corrected image. Only used if subtract_background is True."
           },
           "new_well_subgroup_suffix": {
             "default": "_BG_subtracted",
@@ -1371,7 +1417,7 @@
         "type": "object",
         "title": "SmoBackgroundEstimation"
       },
-      "docs_info": "## smo_background_estimation\nEstimates background of each FOV using SMO.\n\nOnly works with 2D data at the moment.\n"
+      "docs_info": "## smo_background_estimation\nEstimates background of each FOV using SMO.\n\nUses the SMO algorithm to estimate background for each FOV & channel. In\nshort, SMO uses local gradient amount to identify background pixels. See\nthe SMO publication for details: https://doi.org/10.1364/JOSAA.477468\n\nLimitation: Currently, does not support 3D or time-lapse images.\n"
     }
   ],
   "has_args_schemas": true,
