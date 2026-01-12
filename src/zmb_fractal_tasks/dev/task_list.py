@@ -24,6 +24,26 @@ INPUT_MODELS = [
         "basic_correct_illumination_plate_init.py",
         "AdvancedBaSiCParameters",
     ),
+    (
+        "zmb_fractal_tasks",
+        "utils/normalization.py",
+        "NormalizedChannelInputModel",
+    ),
+    (
+        "zmb_fractal_tasks",
+        "utils/normalization.py",
+        "CustomNormalizer",
+    ),
+    (
+        "zmb_fractal_tasks",
+        "measure_features.py",
+        "LabelInput",
+    ),
+    (
+        "zmb_fractal_tasks",
+        "utils/channel_utils.py",
+        "MeasurementChannels",
+    ),
 ]
 
 TASK_LIST = [

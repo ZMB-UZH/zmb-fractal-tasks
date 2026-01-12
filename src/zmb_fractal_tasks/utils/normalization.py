@@ -39,10 +39,16 @@ class CustomNormalizer(BaseModel):
     the percentiles for normalization.
 
     Attributes:
-        mode: One of `default` (default normalization), `custom`
-            (using the other custom parameters), `omero` (using the
-            values in the omero channel), `histogram` (using a precalculated
-            histogram) or `no_normalization`.
+        mode: Normalization mode.
+            'default': Data is normalized so 0.0=1st percentile and 1.0=99th
+            percentile of image intensities.
+            'no_normalization': No normalization is applied.
+            'custom': You can either provide your own rescaling percentiles or
+            fixed rescaling upper and lower bound integers.
+            'omero': The "start" and "end" values from the omero channels in
+            the zarr file are used for upper and lower bounds.
+            'histogram': A precalculated histogram is used for normalization.
+            Percentiles need to be provided.
         lower_percentile: Specify a custom lower-bound percentile for
             rescaling as a float value between 0 and 100. You can only specify
             percentiles or bounds, not both.
@@ -147,7 +153,7 @@ class NormalizedChannelInputModel(ChannelInputModel):
             Can only be specified if label is not set.
         label: Name of the channel. Can only be specified if wavelength_id is
             not set.
-        normalize: Validator to handle different normalization scenarios.
+        normalize: Set image normalization method and parameters.
     """
 
     normalize: CustomNormalizer = Field(default_factory=CustomNormalizer)

@@ -30,7 +30,7 @@ class OutputOptions(BaseModel):
             image.
     """
 
-    overwrite_illumination_profiles: bool = (True,)
+    overwrite_illumination_profiles: bool = True
     overwrite_input_image: bool = True
     new_well_subgroup_suffix: str = "illumination_corrected"
     subtract_median_baseline: bool = False

@@ -3,7 +3,7 @@
 import logging
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -41,7 +41,7 @@ def measure_features(
         "intensity_std",
         "intensity_total",
     ],
-    roi_table: Optional[str] = None,
+    roi_table: str = "FOV_ROI_table",
     append_to_table: bool = True,
 ) -> None:
     """Docstring for measrue_features_new
@@ -53,6 +53,8 @@ def measure_features(
         channels_to_measure: Channels for intensity measurements.
         structure_props: List of regionprops structure properties to measure.
         intensity_props: List of regionprops intensity properties to measure.
+        roi_table: ROI table name to iterate over (e.g 'FOV_ROI_table').
+            If left empty, measure over whole image.
         append_to_table: If True, append new measurements to existing table.
             If False, overwrite existing table.
     """
@@ -113,7 +115,7 @@ def measure_features(
             axes_order=axes_order,
         )
 
-        if roi_table is not None:
+        if roi_table != "":
             # If a ROI table is provided, we load it and use it to further restrict
             # the iteration to the ROIs defined in the table
             table = ome_zarr.get_generic_roi_table(name=roi_table)
@@ -162,7 +164,7 @@ def measure_features(
             # Ensure same index (labels) to avoid misalignment
             if not df_org.index.equals(df_measurements.index):
                 raise ValueError(
-                    "Index mismatch between existing feature table and new measurements."
+                    "Index mismatch between existing and new feature table."
                     " Cannot append."
                 )
             # Merge horizontally

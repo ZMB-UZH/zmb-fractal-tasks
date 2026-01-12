@@ -44,16 +44,7 @@ def segment_cellpose_simple(
             to process at full resolution.
         channel: Channel for segmentation; requires either `wavelength_id`
             (e.g. `A01_C01`) or `label` (e.g. `DAPI`), but not both.
-            Also contains normalization options:
-            'default': Data is normalized so 0.0=1st percentile and 1.0=99th
-            percentile of image intensities.
-            'no_normalization': No normalization is applied.
-            'custom': You can either provide your own rescaling percentiles or
-            fixed rescaling upper and lower bound integers.
-            'omero': The "start" and "end" values from the omero channels in
-            the zarr file are used for upper and lower bounds.
-            'histogram': A precalculated histogram is used for normalization.
-            Percentiles need to be provided.
+            Also contains normalization options.
         input_ROI_table: Name of the ROI table over which the task loops to
             apply segmentation. Examples: `FOV_ROI_table` => loop over
             the field of views, `organoid_ROI_table` => loop over the organoid
