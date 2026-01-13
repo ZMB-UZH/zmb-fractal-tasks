@@ -95,8 +95,8 @@ def segment_cellpose_simple(
     # load data
     cellpose_patches = []
     for roi in roi_table.rois():
-        patch = image.get_roi(roi, c=channel_idx, axes_order="czyx")
-        cellpose_patches.append(patch[channel_idx, 0])
+        patch = image.get_roi(roi, c=channel_idx, axes_order="zyx")
+        cellpose_patches.append(patch)
     # compute segmetnations
     masks = segment_ROIs(
         images=cellpose_patches,
