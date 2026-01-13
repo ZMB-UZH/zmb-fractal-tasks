@@ -44,7 +44,11 @@ def measure_features(
     roi_table: str = "FOV_ROI_table",
     append_to_table: bool = True,
 ) -> None:
-    """Docstring for measrue_features_new
+    """Measure shape and intensity features of labels and write to feature table.
+
+    This task takes one or more label images and measures specified shape and
+    intensity features for each label, using the skimage.measure.regionprops
+    function.
 
     Args:
         zarr_url: Path or url to the individual OME-Zarr image to be processed.
@@ -52,7 +56,13 @@ def measure_features(
         input_labels: Label(s) to be measured.
         channels_to_measure: Channels for intensity measurements.
         structure_props: List of regionprops structure properties to measure.
+            E.g. 'area', 'perimeter', 'solidity'.
+            See https://scikit-image.org/docs/stable/api/skimage.measure.html#skimage.measure.regionprops
+            for full list of possible properties.
         intensity_props: List of regionprops intensity properties to measure.
+            E.g. 'intensity_mean', 'intensity_std', 'intensity_total'.
+            See https://scikit-image.org/docs/stable/api/skimage.measure.html#skimage.measure.regionprops
+            for full list of possible properties.
         roi_table: ROI table name to iterate over (e.g 'FOV_ROI_table').
             If left empty, measure over whole image.
         append_to_table: If True, append new measurements to existing table.

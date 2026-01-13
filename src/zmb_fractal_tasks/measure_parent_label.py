@@ -20,8 +20,8 @@ from zmb_fractal_tasks.utils.regionprops_table_plus import regionprops_table_plu
 def measure_parent_label(
     *,
     zarr_url: str,
-    output_table_name: str,
     input_label_name: str,
+    output_table_name: str,
     parent_label_names: Sequence[str],
     pyramid_level: str = "0",
     roi_table: str = "FOV_ROI_table",
@@ -35,9 +35,10 @@ def measure_parent_label(
     Args:
         zarr_url: Path or url to the individual OME-Zarr image to be processed.
             (standard argument for Fractal tasks, managed by Fractal server).
-        output_table_name: Name of the output table.
-        input_label_name: Name of the label that contains the seeds.
-            Needs to exist in OME-Zarr file.
+        input_label_name: Name of the label that contains the seeds to be
+            assigned to a parent.
+        output_table_name: Name of the output table. (Usually the feature table
+            of the input label).
         parent_label_names: Names of the parent labels to assign to.
         pyramid_level: Resolution level of the label image to use for
             calculations. Choose `0` for full resolution.
@@ -153,8 +154,9 @@ def measure_parent_ROI(
 
     Args:
         labels: Label image to be measured
-        parent_label: lparent label image to measure
+        parent_labels: lparent label image to measure
         parent_prefix: prefix to use for annotation
+        optional_columns: additional columns to add to dataframe
 
     Returns:
         Pandas dataframe
