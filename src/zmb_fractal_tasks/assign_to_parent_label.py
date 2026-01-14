@@ -38,7 +38,7 @@ class AggregationOptions(BaseModel):
         features_to_aggregate (Sequence[str] | None): List of feature names
             (columns in seed-table) to aggregate to parent-table.
             If left empty, all features from seed table are aggregated.
-        aggreation_methods (Sequence[str] | None): List of aggregation methods
+        aggregation_methods (Sequence[str] | None): List of aggregation methods
             to use for each feature. Typical methods are 'sum', 'mean', 'std',
             'sem', 'min', 'max' (any built-in pandas function). A count of
             seeds per parent label is always added automatically.
@@ -48,8 +48,8 @@ class AggregationOptions(BaseModel):
 
     aggregate_features: bool = True
     features_to_aggregate: Optional[Sequence[str]] = None
-    aggreation_methods: Sequence[str] = ["mean", "std"]
-    append_to_table: bool = (True,)
+    aggregation_methods: Sequence[str] = ["mean", "std"]
+    append_to_parent_table: bool = True
 
 
 class AdditionalOptions(BaseModel):
@@ -65,9 +65,9 @@ class AdditionalOptions(BaseModel):
             new one.
     """
 
-    pyramid_level: str = ("0",)
-    roi_table: str = ("FOV_ROI_table",)
-    append_to_seed_table: bool = (True,)
+    pyramid_level: str = "0"
+    roi_table: str = "FOV_ROI_table"
+    append_to_seed_table: bool = True
 
 
 @validate_call
@@ -95,15 +95,12 @@ def assign_to_parent_label(
             (standard argument for Fractal tasks, managed by Fractal server).
         seed_label_name: Name of the label that contains the seeds to be
             assigned to a parent.
-        output_seed_table_name: Name of the output table. (Usually this is the
-            feature table of the input label).
-        parent_label_names: Names of the parent labels to assign to.
-        pyramid_level: Resolution level of the label image to use for
-            calculations. Choose `0` for full resolution.
-            Only tested for 2D images at level 0.
-        roi_table: ROI table name to iterate over (e.g 'FOV_ROI_table').
-            If left empty, measure over whole image.
-        append_to_table: If True, append new measurements to existing table.
+        seed_table_name: Name of the output seed table. (Usually this is the
+            feature table of the seed label).
+        parent_labels: Parent label(s) to assign seeds to.
+        aggregation_options: Options for aggregating features from seed-table
+            to parent-table(s).
+        additional_options: Additional options for the task.
     """
     ome_zarr = open_ome_zarr_container(zarr_url)
 
@@ -188,7 +185,9 @@ def assign_to_parent_label(
         :, ~df_measurements.columns.duplicated(keep="first")
     ]
 
-    if additional_options.append_to_seed_table and (seed_table_name in ome_zarr.list_tables()):
+    if additional_options.append_to_seed_table and (
+        seed_table_name in ome_zarr.list_tables()
+    ):
         feat_table_org = ome_zarr.get_table(seed_table_name)
         df_org = feat_table_org.dataframe
         # Ensure same index (labels) to avoid misalignment
@@ -209,7 +208,41 @@ def assign_to_parent_label(
     ome_zarr.add_table(seed_table_name, feat_table, overwrite=True)
 
     if aggregation_options.aggregate_features:
-        pass
+        logging.info("Starting feature aggregation to parent tables.")
+        for parent_label in parent_labels:
+            parent_label_name = parent_label.parent_label_name
+            output_parent_table_name = parent_label.output_parent_table_name
+            if output_parent_table_name is None:
+                raise ValueError(
+                    "Output parent table name must be provided for aggregation."
+                )
+
+            if aggregation_options.append_to_parent_table and (
+                output_parent_table_name in ome_zarr.list_tables()
+            ):
+                df_parent_org = ome_zarr.get_table(output_parent_table_name).dataframe
+            else:
+                df_parent_org = None
+
+            df_aggregated = aggregate_features(
+                seed_df=df_measurements,
+                seed_label_name=seed_label_name,
+                parent_df=df_parent_org,
+                parent_label_name=parent_label_name,
+                features_to_aggregate=aggregation_options.features_to_aggregate,
+                aggregation_methods=aggregation_options.aggregation_methods,
+            )
+
+            logging.info(
+                f"Writing aggregated measurements to feature table: "
+                f"{output_parent_table_name}"
+            )
+            feat_table_parent = FeatureTable(
+                df_aggregated, reference_label=parent_label_name
+            )
+            ome_zarr.add_table(
+                output_parent_table_name, feat_table_parent, overwrite=True
+            )
 
 
 def measure_parent_ROI(
@@ -278,8 +311,9 @@ def measure_parent_ROI(
 
 def aggregate_features(
     seed_df: pd.DataFrame,
-    parent_label_name: str,
-    parent_label_unique_IDs: Optional[np.ndarray] = None,
+    seed_label_name: str = "seed",
+    parent_df: Optional[pd.DataFrame] = None,
+    parent_label_name: str = "parent",
     features_to_aggregate: Optional[Sequence[str]] = None,
     aggregation_methods: Sequence[str] = ["mean", "std"],
 ):
@@ -287,41 +321,40 @@ def aggregate_features(
 
     Args:
         seed_df: Dataframe of the seed feature table.
-        parent_label_name: Name of the parent label (used as column name
-            for grouping).
-        parent_label_unique_IDs: Unique IDs of the parent labels to
-            aggregate to. If None, all parent labels found in the seed_df are
-            used. (!This might lead to issues when appending to existing parent
-            table!)
+        seed_label_name: Name of the seed label (used to name columns).
+        parent_df: Optional dataframe of the parent feature table to aggregate
+            to. If None, only aggregated features are returned without
+            existing parent features.
+        parent_label_name: Name of the parent label (used to find parent IDs in
+            seed table).
         features_to_aggregate: List of feature names (columns in seed_df) to
-        aggregate to parent-table. If None, all features are aggregated.
+            aggregate to parent-table. If None, all features are aggregated.
         aggregation_methods: List of aggregation methods to use for each feature.
             Typical methods are 'sum', 'mean', 'std', 'sem', 'min', 'max'
             (any built-in pandas function). A count of seeds per parent label
             is always added automatically.
     """
-    df = pd.DataFrame(index=parent_label_unique_IDs)
-    df.index.name = "label"
-    group = seed_df.groupby(by=parent_label_name+"_ID")
-    seed_df_agg = group.agg(
-        particles_count=pd.NamedAgg(column="plate", aggfunc="count"),
-        particles_area_total=pd.NamedAgg(column="area", aggfunc="sum"),
-        particles_area_mean=pd.NamedAgg(column="area", aggfunc="mean"),
-        particles_area_std=pd.NamedAgg(column="area", aggfunc="std"),
-        particles_area_sem=pd.NamedAgg(column="area", aggfunc="sem"),
-        particles_C02_intensity_total_total=pd.NamedAgg(
-            column="C02_intensity_total", aggfunc="sum"
-        ),  # CHANNEL_INFO
-        particles_C02_intensity_total_mean=pd.NamedAgg(
-            column="C02_intensity_total", aggfunc="mean"
-        ),  # CHANNEL_INFO
-        particles_C02_intensity_total_std=pd.NamedAgg(
-            column="C02_intensity_total", aggfunc="std"
-        ),  # CHANNEL_INFO
-        particles_C02_intensity_total_sem=pd.NamedAgg(
-            column="C02_intensity_total", aggfunc="sem"
-        ),  # CHANNEL_INFO
-    )
+    # If no features specified, aggregate all columns
+    if features_to_aggregate is None:
+        features_to_aggregate = seed_df.columns
+
+    # perform aggregation
+    group = seed_df.groupby(by=parent_label_name + "_ID")
+    agg_dict = {f"{seed_label_name}_count": (features_to_aggregate[0], "count")}
+    for feature in features_to_aggregate:
+        for agg in aggregation_methods:
+            agg_dict[f"{seed_label_name}_{feature}_{agg}"] = (feature, agg)
+    seed_df_agg = group.agg(**agg_dict)
+    seed_df_agg.index.name = "label"
+
+    # combine with parent df if provided
+    if parent_df is not None:
+        seed_df_agg = seed_df_agg.reindex(parent_df.index, fill_value=0)
+        df_out = pd.concat([parent_df, seed_df_agg], axis=1)
+    else:
+        df_out = seed_df_agg
+
+    return df_out
 
 
 if __name__ == "__main__":

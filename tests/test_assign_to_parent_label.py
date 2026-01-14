@@ -1,20 +1,37 @@
 import numpy as np
 
 from zmb_fractal_tasks.assign_to_parent_label import (
-    measure_parent_label,
+    AdditionalOptions,
+    AggregationOptions,
+    ParentLabelInput,
+    assign_to_parent_label,
     measure_parent_ROI,
 )
 
 
-def test_measure_parent_label(zarr_MIP_path):
-    measure_parent_label(
+def test_assign_to_parent_label(zarr_MIP_path):
+    assign_to_parent_label(
         zarr_url=str(zarr_MIP_path / "B" / "03" / "0"),
-        output_table_name="nuclei_features",
-        input_label_name="nuclei",
-        parent_label_names=["wf_2_labels", "wf_3_labels"],
-        pyramid_level="0",
-        roi_table="FOV_ROI_table",
-        append_to_table=False,
+        seed_label_name="nuclei",
+        seed_table_name="nuclei_features",
+        parent_labels=[
+            ParentLabelInput(
+                parent_label_name="wf_2_labels",
+                output_parent_table_name="wf_2_features",
+            ),
+            ParentLabelInput(
+                parent_label_name="wf_3_labels",
+                output_parent_table_name="wf_3_features",
+            ),
+        ],
+        aggregation_options=AggregationOptions(
+            aggregate_features=False,
+        ),
+        additional_options=AdditionalOptions(
+            pyramid_level="0",
+            roi_table="FOV_ROI_table",
+            append_to_seed_table=False,
+        ),
     )
     # TODO: Check outputs
 
