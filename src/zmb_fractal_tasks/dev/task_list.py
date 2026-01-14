@@ -41,6 +41,11 @@ INPUT_MODELS = [
     ),
     (
         "zmb_fractal_tasks",
+        "measure_parent_label.py",
+        "ParentLabelInput",
+    ),
+    (
+        "zmb_fractal_tasks",
         "utils/channel_utils.py",
         "MeasurementChannels",
     ),

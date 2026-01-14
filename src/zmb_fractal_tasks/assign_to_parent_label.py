@@ -3,7 +3,7 @@
 import logging
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 import numpy as np
 import pandas as pd
@@ -11,18 +11,35 @@ from ngio import open_ome_zarr_container
 from ngio.experimental.iterators import FeatureExtractorIterator
 from ngio.tables import FeatureTable
 from ngio.transforms import ZoomTransform
-from pydantic import validate_call
+from pydantic import BaseModel, validate_call
 
 from zmb_fractal_tasks.utils.regionprops_table_plus import regionprops_table_plus
 
 
+class ParentLabelInput(BaseModel):
+    """Parent label configuration.
+
+    Args:
+        parent_label_name (str): Name of the parent label.
+        output_parent_table_name (str): Name of corresponding output parent
+            feature table. (Only needed if aggregate_features is True).
+    """
+
+    input_label_name: str
+    output_table_name: Optional[str] = None
+
+class AdditionalOptions(BaseModel):
+    """Advanced options for measuring parent label."""
+
+    pass  # Currently no advanced options, placeholder for future use
+
 @validate_call
-def measure_parent_label(
+def assign_to_parent_label(
     *,
     zarr_url: str,
-    input_label_name: str,
-    output_table_name: str,
-    parent_label_names: Sequence[str],
+    seed_label_name: str,
+    output_seed_table_name: str,
+    parent_labels: Sequence[ParentLabelInput],
     pyramid_level: str = "0",
     roi_table: str = "FOV_ROI_table",
     append_to_table: bool = True,
@@ -211,4 +228,4 @@ def measure_parent_ROI(
 if __name__ == "__main__":
     from fractal_task_tools.task_wrapper import run_fractal_task
 
-    run_fractal_task(task_function=measure_parent_label)
+    run_fractal_task(task_function=assign_to_parent_label)
