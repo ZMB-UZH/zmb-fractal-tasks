@@ -1,6 +1,6 @@
 import numpy as np
 
-from zmb_fractal_tasks.measure_parent_label import (
+from zmb_fractal_tasks.assign_to_parent_label import (
     measure_parent_label,
     measure_parent_ROI,
 )
