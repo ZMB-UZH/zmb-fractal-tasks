@@ -143,7 +143,7 @@
                 "default": false,
                 "title": "Get Darkfield",
                 "type": "boolean",
-                "description": "If True, calculate darkfield correction."
+                "description": "If True, calculate darkfield correction in addition to flatfield correction."
               },
               "smoothness_flatfield": {
                 "default": 1.0,
@@ -160,7 +160,7 @@
               "random_seed": {
                 "title": "Random Seed",
                 "type": "integer",
-                "description": "Integer random seed to initialize random number generator. None will result in non-reproducibel outputs."
+                "description": "Integer random seed to initialize random number generator. If left empty, it will result in non-reproducible outputs."
               }
             },
             "title": "CoreBaSiCParameters",
@@ -217,7 +217,7 @@
             "default": "BaSiC_illumination_profiles",
             "title": "Illumination Profiles Folder Name",
             "type": "string",
-            "description": "Name of folder to save illumination profiles in. The folder will be created inside zarr_dir."
+            "description": "Name of folder to save illumination profiles in. The folder will be created inside dataset folder (zarr_dir)."
           },
           "output_options": {
             "$ref": "#/$defs/OutputOptions",
