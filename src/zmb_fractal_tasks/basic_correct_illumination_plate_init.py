@@ -43,13 +43,14 @@ class CoreBaSiCParameters(BaseModel):
         n_images_sampled: Number of images to sample for illumination
             correction. If there are less images available than n_images, all
             available images will be used.
-        get_darkfield: If True, calculate darkfield correction.
+        get_darkfield: If True, calculate darkfield correction in addition to
+            flatfield correction.
         smoothness_flatfield: Smoothing parameter for flatfield.
             (Weight of the flatfield term in the Lagrangian.)
         smoothness_darkfield: Smoothing parameter for darkfield.
             (Weight of the darkfield term in the Lagrangian.)
         random_seed: Integer random seed to initialize random number generator.
-            None will result in non-reproducibel outputs.
+            If left empty, it will result in non-reproducible outputs.
     """
 
     n_images_sampled: int = 256
@@ -134,7 +135,7 @@ def basic_correct_illumination_plate_init(
             (Standard argument for Fractal tasks, managed by Fractal server).
         illumination_profiles_folder_name (str): Name of folder to save
             illumination profiles in. The folder will be created inside
-            zarr_dir.
+            dataset folder (zarr_dir).
         output_options (OutputOptions): Options for output.
         core_basic_parameters (CoreBaSiCParameters): Core parameters for BaSiC
             illumination correction.
