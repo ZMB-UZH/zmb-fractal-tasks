@@ -36,7 +36,7 @@ def expand_segmentation(
         expansion_distance: Distance by which the labels are expanded, in
             pixels at level 0.
         save_union: If `True`, save the union of the original and expanded
-            labels. (corresponds to e.g. the intire cell)
+            labels. (corresponds to e.g. the entire cell)
         union_output_label_name: Name of the output label image for the union
             (e.g. `cells`).
         save_difference: If `True`, save the difference between the original
