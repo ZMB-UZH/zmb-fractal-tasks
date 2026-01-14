@@ -334,9 +334,9 @@ def aggregate_features(
             (any built-in pandas function). A count of seeds per parent label
             is always added automatically.
     """
-    # If no features specified, aggregate all columns
+    # If no features specified, aggregate all numeric columns
     if features_to_aggregate is None:
-        features_to_aggregate = seed_df.columns
+        features_to_aggregate = seed_df.select_dtypes(include=[np.number]).columns
 
     # perform aggregation
     group = seed_df.groupby(by=parent_label_name + "_ID")
