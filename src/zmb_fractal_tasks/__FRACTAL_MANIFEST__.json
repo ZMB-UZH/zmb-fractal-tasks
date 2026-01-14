@@ -360,7 +360,7 @@
           "zarr_dir": {
             "title": "Zarr Dir",
             "type": "string",
-            "description": "Profiles will be saved in {zarr_dir}/{illumination_profiles_folder_name} (Standard argument for Fractal tasks, managed by Fractal server)."
+            "description": "Not used for this task. (Standard argument for Fractal tasks, managed by Fractal server)."
           },
           "acquisitions_to_combine": {
             "items": {
@@ -563,7 +563,7 @@
             "default": true,
             "title": "Save Union",
             "type": "boolean",
-            "description": "If `True`, save the union of the original and expanded labels. (corresponds to e.g. the intire cell)"
+            "description": "If `True`, save the union of the original and expanded labels. (corresponds to e.g. the entire cell)"
           },
           "union_output_label_name": {
             "title": "Union Output Label Name",
@@ -848,7 +848,7 @@
             },
             "title": "Structure Props",
             "type": "array",
-            "description": "List of regionprops structure properties to measure."
+            "description": "List of regionprops structure properties to measure. E.g. 'area', 'perimeter', 'solidity'. See https://scikit-image.org/docs/stable/api/skimage.measure.html#skimage.measure.regionprops for full list of possible properties."
           },
           "intensity_props": {
             "default": [
@@ -861,7 +861,7 @@
             },
             "title": "Intensity Props",
             "type": "array",
-            "description": "List of regionprops intensity properties to measure."
+            "description": "List of regionprops intensity properties to measure. E.g. 'intensity_mean', 'intensity_std', 'intensity_total'. See https://scikit-image.org/docs/stable/api/skimage.measure.html#skimage.measure.regionprops for full list of possible properties."
           },
           "roi_table": {
             "default": "FOV_ROI_table",
@@ -884,21 +884,109 @@
         "type": "object",
         "title": "MeasureFeatures"
       },
-      "docs_info": "## measure_features\nDocstring for measrue_features_new\n"
+      "docs_info": "## measure_features\nMeasure shape and intensity features of labels and write to feature table.\n\nThis task takes one or more label images and measures specified shape and\nintensity features for each label, using the skimage.measure.regionprops\nfunction.\n"
     },
     {
-      "name": "Measure parent label",
+      "name": "Assign to parent label",
       "category": "Measurement",
       "tags": [
-        "Measure"
+        "Measure",
+        "Assign",
+        "Aggregate"
       ],
       "type": "parallel",
-      "executable_parallel": "measure_parent_label.py",
+      "executable_parallel": "assign_to_parent_label.py",
       "meta_parallel": {
         "cpus_per_task": 1,
         "mem": 4000
       },
       "args_schema_parallel": {
+        "$defs": {
+          "AdditionalOptions": {
+            "description": "Additional options.",
+            "properties": {
+              "pyramid_level": {
+                "default": "0",
+                "title": "Pyramid Level",
+                "type": "string",
+                "description": "Resolution level of the label image to use for calculations. Choose `0` for full resolution."
+              },
+              "roi_table": {
+                "default": "FOV_ROI_table",
+                "title": "Roi Table",
+                "type": "string",
+                "description": "ROI table name to iterate over (e.g 'FOV_ROI_table'). If left empty, measure over whole image."
+              },
+              "append_to_seed_table": {
+                "default": true,
+                "title": "Append To Seed Table",
+                "type": "boolean",
+                "description": "If True, append new measurements to existing seed table. If False, overwrite existing table or create new one."
+              }
+            },
+            "title": "AdditionalOptions",
+            "type": "object"
+          },
+          "AggregationOptions": {
+            "description": "Options for feature aggregation.",
+            "properties": {
+              "aggregate_features": {
+                "default": true,
+                "title": "Aggregate Features",
+                "type": "boolean",
+                "description": "Whether to aggregate features in seed-table to parent-table."
+              },
+              "features_to_aggregate": {
+                "items": {
+                  "type": "string"
+                },
+                "title": "Features To Aggregate",
+                "type": "array",
+                "description": "List of feature names (columns in seed-table) to aggregate to parent-table. If left empty, all features from seed table are aggregated."
+              },
+              "aggregation_methods": {
+                "default": [
+                  "mean",
+                  "std"
+                ],
+                "items": {
+                  "type": "string"
+                },
+                "title": "Aggregation Methods",
+                "type": "array",
+                "description": "List of aggregation methods to use for each feature. Typical methods are 'sum', 'mean', 'std', 'sem', 'min', 'max' (any built-in pandas function). A count of seeds per parent label is always added automatically."
+              },
+              "append_to_parent_table": {
+                "default": true,
+                "title": "Append To Parent Table",
+                "type": "boolean",
+                "description": "If True, aggregated features to existing table(s). If False, overwrite existing table or create new one."
+              }
+            },
+            "title": "AggregationOptions",
+            "type": "object"
+          },
+          "ParentLabelInput": {
+            "description": "Parent label configuration.",
+            "properties": {
+              "parent_label_name": {
+                "title": "Parent Label Name",
+                "type": "string",
+                "description": "Name of the parent label."
+              },
+              "output_parent_table_name": {
+                "title": "Output Parent Table Name",
+                "type": "string",
+                "description": "Name of corresponding output parent feature table. (Only needed if aggregate_features is True)."
+              }
+            },
+            "required": [
+              "parent_label_name"
+            ],
+            "title": "ParentLabelInput",
+            "type": "object"
+          }
+        },
         "additionalProperties": false,
         "properties": {
           "zarr_url": {
@@ -906,53 +994,47 @@
             "type": "string",
             "description": "Path or url to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
           },
-          "output_table_name": {
-            "title": "Output Table Name",
+          "seed_label_name": {
+            "title": "Seed Label Name",
             "type": "string",
-            "description": "Name of the output table."
+            "description": "Name of the label that contains the seeds to be assigned to a parent."
           },
-          "input_label_name": {
-            "title": "Input Label Name",
+          "seed_table_name": {
+            "title": "Seed Table Name",
             "type": "string",
-            "description": "Name of the label that contains the seeds. Needs to exist in OME-Zarr file."
+            "description": "Name of the output seed table. (Usually this is the feature table of the seed label)."
           },
-          "parent_label_names": {
+          "parent_labels": {
             "items": {
-              "type": "string"
+              "$ref": "#/$defs/ParentLabelInput"
             },
-            "title": "Parent Label Names",
+            "title": "Parent Labels",
             "type": "array",
-            "description": "Names of the parent labels to assign to."
+            "description": "Parent label(s) to assign seeds to."
           },
-          "pyramid_level": {
-            "default": "0",
-            "title": "Pyramid Level",
-            "type": "string",
-            "description": "Resolution level of the label image to use for calculations. Choose `0` for full resolution. Only tested for 2D images at level 0."
+          "aggregation_options": {
+            "$ref": "#/$defs/AggregationOptions",
+            "title": "Aggregation Options",
+            "description": "Options for aggregating features from seed-table to parent-table(s)."
           },
-          "roi_table": {
-            "default": "FOV_ROI_table",
-            "title": "Roi Table",
-            "type": "string",
-            "description": "ROI table name to iterate over (e.g 'FOV_ROI_table'). If left empty, measure over whole image."
-          },
-          "append_to_table": {
-            "default": true,
-            "title": "Append To Table",
-            "type": "boolean",
-            "description": "If True, append new measurements to existing table."
+          "additional_options": {
+            "$ref": "#/$defs/AdditionalOptions",
+            "title": "Additional Options",
+            "description": "Additional options for the task."
           }
         },
         "required": [
           "zarr_url",
-          "output_table_name",
-          "input_label_name",
-          "parent_label_names"
+          "seed_label_name",
+          "seed_table_name",
+          "parent_labels",
+          "aggregation_options",
+          "additional_options"
         ],
         "type": "object",
-        "title": "MeasureParentLabel"
+        "title": "AssignToParentLabel"
       },
-      "docs_info": "## measure_parent_label\nAssign label to parent label.\n\nTakes a label image and a parent label image and assigns each label to a\nparent label based on maximum overlap. Writes results to a feature table.\n"
+      "docs_info": "## assign_to_parent_label\nAssign label to parent label and optionally aggregate features.\n\nTakes a seed label image and a parent label image and assigns each seed\nlabel to a parent label based on maximum overlap. The assigned parent\nlabel IDs are then stored in the seed-table. More than one parent label can\nbe provided to assign to multiple parents.\n\nOptionally, features from the seed-table (if it already exists) can be\naggregated to the parent-table by using the specified aggregation methods.\n"
     },
     {
       "name": "Measure shortest distance to label",

@@ -28,8 +28,7 @@ def combine_acquisitions_init(
         zarr_urls: List of paths or urls to the individual OME-Zarr images to
             be processed.
             (Standard argument for Fractal tasks, managed by Fractal server).
-        zarr_dir: Profiles will be saved in
-            {zarr_dir}/{illumination_profiles_folder_name}
+        zarr_dir: Not used for this task.
             (Standard argument for Fractal tasks, managed by Fractal server).
         acquisitions_to_combine: Optional: List of acquisition IDs to combine.
             If left empty, all acquisitions found in the plate will be

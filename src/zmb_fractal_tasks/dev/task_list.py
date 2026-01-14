@@ -41,8 +41,18 @@ INPUT_MODELS = [
     ),
     (
         "zmb_fractal_tasks",
-        "measure_parent_label.py",
+        "assign_to_parent_label.py",
         "ParentLabelInput",
+    ),
+    (
+        "zmb_fractal_tasks",
+        "assign_to_parent_label.py",
+        "AggregationOptions",
+    ),
+    (
+        "zmb_fractal_tasks",
+        "assign_to_parent_label.py",
+        "AdditionalOptions",
     ),
     (
         "zmb_fractal_tasks",
@@ -115,11 +125,11 @@ TASK_LIST = [
         tags=["Measure"],
     ),
     ParallelTask(
-        name="Measure parent label",
-        executable="measure_parent_label.py",
+        name="Assign to parent label",
+        executable="assign_to_parent_label.py",
         meta={"cpus_per_task": 1, "mem": 4000},
         category="Measurement",
-        tags=["Measure"],
+        tags=["Measure", "Assign", "Aggregate"],
     ),
     ParallelTask(
         name="Measure shortest distance to label",

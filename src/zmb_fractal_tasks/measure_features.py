@@ -163,7 +163,9 @@ def measure_features(
                     "ROI": roi.name,
                 },
             )
-            measurements.append(roi_measurements)
+            # Only append if there are measurements
+            if len(roi_measurements) > 0:
+                measurements.append(roi_measurements)
 
         df_measurements = pd.concat(measurements, axis=0)
 
