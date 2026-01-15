@@ -1476,6 +1476,12 @@
             "type": "string",
             "description": "Absolute path to the OME-Zarr image. (standard argument for Fractal tasks, managed by Fractal server)."
           },
+          "pyramid_level": {
+            "default": "0",
+            "title": "Pyramid Level",
+            "type": "string",
+            "description": "Pyramid level to use for background estimation. Choose `0` to process at full resolution."
+          },
           "sigma": {
             "default": 0.0,
             "title": "Sigma",
