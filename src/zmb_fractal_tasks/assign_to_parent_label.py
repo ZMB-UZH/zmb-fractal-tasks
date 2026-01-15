@@ -176,7 +176,14 @@ def assign_to_parent_label(
             )
             measurements.append(roi_measurements)
 
-        df_measurements_list.append(pd.concat(measurements, axis=0))
+        # Filter out empty dataframes before concatenation to avoid FutureWarning
+        non_empty_measurements = [m for m in measurements if not m.empty]
+        if non_empty_measurements:
+            df_measurements_list.append(pd.concat(non_empty_measurements, axis=0))
+        else:
+            # If all measurements are empty, create an empty dataframe with expected columns
+            # Use the first measurement as template for columns
+            df_measurements_list.append(measurements[0])
 
     # merge all parent measurements
     df_measurements = pd.concat(df_measurements_list, axis=1)
@@ -272,6 +279,8 @@ def measure_parent_ROI(
         columns.append(f"{parent_prefix}_ID")
         df = pd.DataFrame(columns=columns)
         df.index.name = "label"
+        # Set proper dtype for parent ID column to avoid object dtype
+        df[f"{parent_prefix}_ID"] = df[f"{parent_prefix}_ID"].astype("Int64")
         return df
 
     # initiate dataframe
