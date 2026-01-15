@@ -15,6 +15,7 @@ from smo import SMO
 def smo_background_estimation(
     *,
     zarr_url: str,
+    pyramid_level: str = "0",
     sigma: float = 0.0,
     size: int = 7,
     subtract_background: bool = False,
@@ -32,6 +33,8 @@ def smo_background_estimation(
     Args:
         zarr_url: Absolute path to the OME-Zarr image.
             (standard argument for Fractal tasks, managed by Fractal server).
+        pyramid_level: Pyramid level to use for background estimation. Choose
+            `0` to process at full resolution.
         sigma: Standard deviation for Gaussian pre-filter to reduce noise.
         size: Window size in pixels to average gradient. Should be smaller than
             foreground objects & background regions.
@@ -44,7 +47,7 @@ def smo_background_estimation(
             name. Only used if overwrite_input_image is False.
     """
     omezarr = open_ome_zarr_container(zarr_url)
-    source_image = omezarr.get_image()
+    source_image = omezarr.get_image(path=pyramid_level)
 
     # TODO: support time-lapses?
     if source_image.is_time_series:
@@ -100,7 +103,7 @@ def smo_background_estimation(
         output_image.consolidate()
 
         if overwrite_input_image:
-            image_list_updates = {"image_list_updates": [{"zarr_url": zarr_url}]}
+            image_list_updates = {}
         else:
             image_list_updates = {
                 "image_list_updates": [{"zarr_url": new_zarr_url, "origin": zarr_url}]
