@@ -77,6 +77,8 @@ def smo_background_estimation(
 
     # Apply BG subtraction
     if subtract_background:
+        # open source image again at highest resolution
+        source_image = omezarr.get_image()
         # open new ome-zarr
         if overwrite_input_image:
             output_omezarr = omezarr
