@@ -55,8 +55,8 @@ def export_table_as_csv(
             plate_name = Path(Path(zarr_url).as_posix().split(".zarr/")[0]).stem
             component = Path(zarr_url).as_posix().split(".zarr/")[1]
             well_row = component.split("/")[0]
-            well_col = component.split("/")[1]
-            well_name = well_row + well_col
+            well_col = int(component.split("/")[1])
+            well_name = well_row + f"{well_col:02d}"
             table_df["plate"] = plate_name
             table_df["well"] = well_name
             # insert plate and well columns at the front
@@ -64,7 +64,7 @@ def export_table_as_csv(
             table_df.insert(1, "well", table_df.pop("well"))
             # add condition from plate layout if provided
             if plate_layout_path:
-                condition = plate_layout.loc[well_row, well_col]
+                condition = plate_layout.loc[well_row, str(well_col)]
                 table_df["condition"] = condition
                 table_df.insert(2, "condition", table_df.pop("condition"))
 

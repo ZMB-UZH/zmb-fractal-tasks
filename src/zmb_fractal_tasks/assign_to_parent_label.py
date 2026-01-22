@@ -121,7 +121,7 @@ def assign_to_parent_label(
     plate_name = Path(Path(zarr_url).as_posix().split(".zarr/")[0]).stem
     try:
         component = Path(zarr_url).as_posix().split(".zarr/")[1]
-        well_name = component.split("/")[0] + component.split("/")[1]
+        well_name = component.split("/")[0] + f"{int(component.split('/')[1]):02d}"
     except Exception:
         well_name = "None"
 
