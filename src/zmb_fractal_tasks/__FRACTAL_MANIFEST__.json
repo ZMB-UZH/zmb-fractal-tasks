@@ -1520,6 +1520,62 @@
         "title": "SmoBackgroundEstimation"
       },
       "docs_info": "## smo_background_estimation\nEstimates background of each FOV using SMO.\n\nUses the SMO algorithm to estimate background for each FOV & channel. In\nshort, SMO uses local gradient amount to identify background pixels. See\nthe SMO publication for details: https://doi.org/10.1364/JOSAA.477468\n\nLimitation: Currently, does not support 3D or time-lapse images.\n"
+    },
+    {
+      "name": "Export table as CSV",
+      "category": "Utility",
+      "tags": [
+        "Export",
+        "CSV",
+        "Table"
+      ],
+      "type": "non_parallel",
+      "executable_non_parallel": "export_table_as_csv.py",
+      "meta_non_parallel": {
+        "cpus_per_task": 1,
+        "mem": 4000
+      },
+      "args_schema_non_parallel": {
+        "additionalProperties": false,
+        "properties": {
+          "zarr_urls": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Zarr Urls",
+            "type": "array",
+            "description": "List of paths or urls to the individual OME-Zarr images to be processed. (Standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "zarr_dir": {
+            "title": "Zarr Dir",
+            "type": "string",
+            "description": "Table will be exported to {zarr_dir}/{export_table_name}.csv (Standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "table_to_export": {
+            "title": "Table To Export",
+            "type": "string",
+            "description": "Missing description"
+          },
+          "export_table_name": {
+            "title": "Export Table Name",
+            "type": "string",
+            "description": "Name of the table to be exported. If None, defaults to the name of the exported table."
+          },
+          "plate_layout_path": {
+            "title": "Plate Layout Path",
+            "type": "string",
+            "description": "Path to a CSV file containing plate layout information. Column names should be non-zero-padded numbers (e.g., 1, 2, 3, not 01, 02, 03). It should have the following format: ,1,2,3,...\\n A,conditionA1,conditionA2,conditionA3,...\\n B,conditionB1,conditionB2,conditionB3,...\\n ..."
+          }
+        },
+        "required": [
+          "zarr_urls",
+          "zarr_dir",
+          "table_to_export"
+        ],
+        "type": "object",
+        "title": "ExportTableAsCsv"
+      },
+      "docs_info": "## export_table_as_csv\nCombine and export tables from multiple OME-Zarr files to CSV.\n"
     }
   ],
   "has_args_schemas": true,

@@ -159,4 +159,11 @@ TASK_LIST = [
         category="Image Processing",
         tags=["Background", "SMO", "BG", "BG Subtraction", "Background Subtraction"],
     ),
+    NonParallelTask(
+        name="Export table as CSV",
+        executable="export_table_as_csv.py",
+        meta={"cpus_per_task": 1, "mem": 4000},
+        category="Utility",
+        tags=["Export", "CSV", "Table"],
+    ),
 ]
