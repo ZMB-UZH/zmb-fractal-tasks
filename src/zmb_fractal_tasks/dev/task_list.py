@@ -73,6 +73,13 @@ TASK_LIST = [
         category="Image Processing",
         tags=["Illumination correction", "BaSiC"],
     ),
+    ParallelTask(
+        name="Apply illumination correction",
+        executable="illumination_correction.py",
+        meta={"cpus_per_task": 1, "mem": 4000},
+        category="Image Processing",
+        tags=["Illumination correction"],
+    ),
     CompoundTask(
         name="Merge acquisitions along channel axis",
         executable_init="combine_acquisitions_init.py",

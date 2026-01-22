@@ -328,6 +328,74 @@
       "docs_info": "## basic_correct_illumination_plate_init\nCalculate illumination profiles and correct channels using BaSiC.\n\nSee https://basicpy.readthedocs.io for more information on BaSiC.\nThis task calculates illumination correction profiles based on a random\nsample of FOVs of the entire plate for each channel. It stores the\ncalculated illumination profiles in a specified folder and corrects each\nimage in the plate using these profiles.\nNOTE: This assumes that all FOVs in the plate have the same dimensions.\n## basic_apply_illumination_profile\nApplies illumination correction to the OME-Zarr.\n\nUses illumination profiles calculated using the 'BaSiC: Calculate\nillumination profile for plate' task.\n"
     },
     {
+      "name": "Apply illumination correction",
+      "category": "Image Processing",
+      "tags": [
+        "Illumination correction"
+      ],
+      "type": "parallel",
+      "executable_parallel": "illumination_correction.py",
+      "meta_parallel": {
+        "cpus_per_task": 1,
+        "mem": 4000
+      },
+      "args_schema_parallel": {
+        "additionalProperties": false,
+        "properties": {
+          "zarr_url": {
+            "title": "Zarr Url",
+            "type": "string",
+            "description": "Path or url to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "illumination_profiles_folder": {
+            "title": "Illumination Profiles Folder",
+            "type": "string",
+            "description": "Path of folder of illumination profiles."
+          },
+          "illumination_profiles": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Illumination Profiles",
+            "type": "object",
+            "description": "Dictionary where keys match the `wavelength_id` attributes of existing channels (e.g. `A01_C01` ) and values are the filenames of the corresponding illumination profiles."
+          },
+          "background": {
+            "default": 0,
+            "title": "Background",
+            "type": "integer",
+            "description": "Background value that is subtracted from the image before the illumination correction is applied. Set it to `0` if you don't want any background subtraction."
+          },
+          "input_ROI_table": {
+            "default": "FOV_ROI_table",
+            "title": "Input Roi Table",
+            "type": "string",
+            "description": "Name of the ROI table that contains the information about the location of the individual field of views (FOVs) to which the illumination correction shall be applied. Defaults to \"FOV_ROI_table\", the default name Fractal converters give the ROI tables that list all FOVs separately. If you generated your OME-Zarr with a different converter and used Import OME-Zarr to generate the ROI tables, `image_ROI_table` is the right choice if you only have 1 FOV per Zarr image and `grid_ROI_table` if you have multiple FOVs per Zarr image and set the right grid options during import."
+          },
+          "overwrite_input_image": {
+            "default": true,
+            "title": "Overwrite Input Image",
+            "type": "boolean",
+            "description": "If `True`, the results of this task will overwrite the input image data. If false, a new image is generated and the illumination corrected data is saved there."
+          },
+          "new_well_subgroup_suffix": {
+            "default": "_illum_corr",
+            "title": "New Well Subgroup Suffix",
+            "type": "string",
+            "description": "What suffix to append to the illumination corrected images. Only relevant if `overwrite_input=False`."
+          }
+        },
+        "required": [
+          "zarr_url",
+          "illumination_profiles_folder",
+          "illumination_profiles"
+        ],
+        "type": "object",
+        "title": "IlluminationCorrection"
+      },
+      "docs_info": "## illumination_correction\nApplies illumination correction to the images in the OME-Zarr.\n\nAssumes that the illumination correction profiles were generated before\nseparately and that the same background subtraction was used during\ncalculation of the illumination correction (otherwise, it will not work\nwell & the correction may only be partial).\n"
+    },
+    {
       "name": "Merge acquisitions along channel axis",
       "category": "Utility",
       "tags": [
