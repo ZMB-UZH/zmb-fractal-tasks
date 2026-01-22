@@ -52,7 +52,7 @@ def test_export_table_basic(zarr_with_measurements, tmp_path):
     export_table_as_csv(
         zarr_urls=zarr_urls,
         zarr_dir=zarr_dir,
-        table_to_export="nuclei_measurements",
+        tables_to_export=["nuclei_measurements"],
     )
     
     # Verify CSV file was created
@@ -76,30 +76,6 @@ def test_export_table_basic(zarr_with_measurements, tmp_path):
     assert "DAPI_intensity_mean" in df.columns
     
     # Verify data is present
-    assert len(df) > 0
-
-
-def test_export_table_custom_name(zarr_with_measurements, tmp_path):
-    """Test exporting table with custom output name."""
-    zarr_dir = str(tmp_path / "output")
-    Path(zarr_dir).mkdir(exist_ok=True)
-    
-    zarr_urls = [
-        str(zarr_with_measurements / "B" / "03" / "0"),
-    ]
-    
-    export_table_as_csv(
-        zarr_urls=zarr_urls,
-        zarr_dir=zarr_dir,
-        table_to_export="nuclei_measurements",
-        export_table_name="custom_export_name",
-    )
-    
-    # Verify CSV file was created with custom name
-    csv_path = Path(zarr_dir) / "custom_export_name.csv"
-    assert csv_path.exists()
-    
-    df = pd.read_csv(csv_path, index_col=0)
     assert len(df) > 0
 
 
@@ -128,7 +104,7 @@ def test_export_table_with_plate_layout(zarr_with_measurements, tmp_path):
     export_table_as_csv(
         zarr_urls=zarr_urls,
         zarr_dir=zarr_dir,
-        table_to_export="nuclei_measurements",
+        tables_to_export=["nuclei_measurements"],
         plate_layout_path=str(plate_layout_path),
     )
     
@@ -165,7 +141,7 @@ def test_export_table_single_well(zarr_with_measurements, tmp_path):
     export_table_as_csv(
         zarr_urls=zarr_urls,
         zarr_dir=zarr_dir,
-        table_to_export="nuclei_measurements",
+        tables_to_export=["nuclei_measurements"],
     )
     
     csv_path = Path(zarr_dir) / "nuclei_measurements.csv"
@@ -188,7 +164,7 @@ def test_export_table_plate_name_parsing(zarr_with_measurements, tmp_path):
     export_table_as_csv(
         zarr_urls=zarr_urls,
         zarr_dir=zarr_dir,
-        table_to_export="nuclei_measurements",
+        tables_to_export=["nuclei_measurements"],
     )
     
     csv_path = Path(zarr_dir) / "nuclei_measurements.csv"

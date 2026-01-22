@@ -1551,26 +1551,24 @@
             "type": "string",
             "description": "Table will be exported to {zarr_dir}/{export_table_name}.csv (Standard argument for Fractal tasks, managed by Fractal server)."
           },
-          "table_to_export": {
-            "title": "Table To Export",
-            "type": "string",
-            "description": "Missing description"
-          },
-          "export_table_name": {
-            "title": "Export Table Name",
-            "type": "string",
-            "description": "Name of the table to be exported. If None, defaults to the name of the exported table."
+          "tables_to_export": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Tables To Export",
+            "type": "array",
+            "description": "Names of the tables to be exported."
           },
           "plate_layout_path": {
             "title": "Plate Layout Path",
             "type": "string",
-            "description": "Path to a CSV file containing plate layout information. Column names should be non-zero-padded numbers (e.g., 1, 2, 3, not 01, 02, 03). It should have the following format: ,1,2,3,...\\n A,conditionA1,conditionA2,conditionA3,...\\n B,conditionB1,conditionB2,conditionB3,...\\n ..."
+            "description": "Path to a CSV file containing plate layout information. Column names should be non-zero-padded numbers (e.g., 1, 2, 3, not 01, 02, 03). It should have the following format: , 1, 2, 3, ... A, conditionA1, conditionA2, conditionA3, ... B, conditionB1, conditionB2, conditionB3, ... ..."
           }
         },
         "required": [
           "zarr_urls",
           "zarr_dir",
-          "table_to_export"
+          "tables_to_export"
         ],
         "type": "object",
         "title": "ExportTableAsCsv"
