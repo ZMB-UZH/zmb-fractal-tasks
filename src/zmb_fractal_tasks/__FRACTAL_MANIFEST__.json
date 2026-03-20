@@ -697,6 +697,14 @@
               },
               "normalize": {
                 "$ref": "#/$defs/CustomNormalizer",
+                "default": {
+                  "mode": "default",
+                  "lower_percentile": null,
+                  "upper_percentile": null,
+                  "lower_bound": null,
+                  "upper_bound": null,
+                  "histogram_name": "channel_histograms"
+                },
                 "title": "Normalize"
               }
             },
@@ -858,6 +866,14 @@
               },
               "normalize": {
                 "$ref": "#/$defs/CustomNormalizer",
+                "default": {
+                  "mode": "default",
+                  "lower_percentile": null,
+                  "upper_percentile": null,
+                  "lower_bound": null,
+                  "upper_bound": null,
+                  "histogram_name": "channel_histograms"
+                },
                 "title": "Normalize"
               }
             },
