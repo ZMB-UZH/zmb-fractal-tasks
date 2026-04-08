@@ -73,7 +73,7 @@ class CustomNormalizer(BaseModel):
     upper_percentile: Optional[float] = Field(None, ge=0, le=100)
     lower_bound: Optional[int] = None
     upper_bound: Optional[int] = None
-    histogram_name: Optional[str] = "channel_histograms"
+    histogram_name: str = "channel_histograms"
 
     # TODO: use this pydantic model to check that histograms actually exist
 

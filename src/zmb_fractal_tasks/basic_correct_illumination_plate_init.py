@@ -5,13 +5,13 @@ import os
 import random
 import shutil
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Literal, Optional
 
 import dask.array as da
 import numpy as np
 from basicpy import BaSiC
 from ngio import open_ome_zarr_container
-from pydantic import BaseModel, validate_call
+from pydantic import BaseModel, Field, validate_call
 
 
 class OutputOptions(BaseModel):
@@ -64,23 +64,20 @@ class AdvancedBaSiCParameters(BaseModel):
     """Advanced Parameters for BaSiC
 
     Args:
-        autosegment: When not False, automatically segment the image before
-            fitting. When True, threshold_otsu from scikit-image is used and
-            the brighter pixels are taken.When a callable is given, it is used
-            as the segmentation function.
-        autosegment_margin: Margin of the segmentation mask to the thresholded
-            region.
         epsilon: Weight regularization term.
+        fitting_mode: Fitting mode for optimization.
+            Must be either "approximate" or "ladmap".
         max_iterations: Maximum number of iterations for single optimization.
         max_mu_coef: Maximum allowed value of mu, divided by the initial value.
         max_reweight_iterations: Maximum number of reweighting iterations.
         max_reweight_iterations_baseline: Maximum number of reweighting
             iterations for baseline.
-        max_workers: Maximum number of threads used for processing.
         mu_coef: Coefficient for initial mu value.
         optimization_tol: Optimization tolerance.
         optimization_tol_diff: Optimization tolerance for update diff.
         reweighting_tol: Reweighting tolerance in mean absolute difference of
+            images.
+        resize_params: Parameters for the resize function when downsampling
             images.
         rho: Parameter rho for mu update.
         sort_intensity: Whether or not to sort the intensities of the image.
@@ -89,22 +86,21 @@ class AdvancedBaSiCParameters(BaseModel):
         working_size: Size for running computations. None means no rescaling.
     """
 
-    autosegment: bool = False
-    autosegment_margin: int = 10
     epsilon: float = 0.1
+    fitting_mode: Literal["approximate", "ladmap"] = "approximate"
     max_iterations: int = 500
     max_mu_coef: float = 10000000.0
     max_reweight_iterations: int = 10
     max_reweight_iterations_baseline: int = 5
-    max_workers: int = 8
     mu_coef: float = 12.5
     optimization_tol: float = 0.001
     optimization_tol_diff: float = 0.01
     reweighting_tol: float = 0.01
+    resize_params: dict[str, Any] = Field(default_factory=dict)
     rho: float = 1.5
     sort_intensity: bool = False
     sparse_cost_darkfield: float = 0.01
-    working_size: Optional[int] = 128
+    working_size: int = 128
 
 
 @validate_call
@@ -218,18 +214,17 @@ def basic_correct_illumination_plate_init(
             get_darkfield=core_basic_parameters.get_darkfield,
             smoothness_flatfield=core_basic_parameters.smoothness_flatfield,
             smoothness_darkfield=core_basic_parameters.smoothness_darkfield,
-            autosegment=advanced_basic_parameters.autosegment,
-            autosegment_margin=advanced_basic_parameters.autosegment_margin,
             epsilon=advanced_basic_parameters.epsilon,
+            fitting_mode=advanced_basic_parameters.fitting_mode,
             max_iterations=advanced_basic_parameters.max_iterations,
             max_mu_coef=advanced_basic_parameters.max_mu_coef,
             max_reweight_iterations=advanced_basic_parameters.max_reweight_iterations,
             max_reweight_iterations_baseline=advanced_basic_parameters.max_reweight_iterations_baseline,
-            max_workers=advanced_basic_parameters.max_workers,
             mu_coef=advanced_basic_parameters.mu_coef,
             optimization_tol=advanced_basic_parameters.optimization_tol,
             optimization_tol_diff=advanced_basic_parameters.optimization_tol_diff,
             reweighting_tol=advanced_basic_parameters.reweighting_tol,
+            resize_params=advanced_basic_parameters.resize_params,
             rho=advanced_basic_parameters.rho,
             sort_intensity=advanced_basic_parameters.sort_intensity,
             sparse_cost_darkfield=advanced_basic_parameters.sparse_cost_darkfield,

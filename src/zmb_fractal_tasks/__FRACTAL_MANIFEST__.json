@@ -30,23 +30,21 @@
           "AdvancedBaSiCParameters": {
             "description": "Advanced Parameters for BaSiC",
             "properties": {
-              "autosegment": {
-                "default": false,
-                "title": "Autosegment",
-                "type": "boolean",
-                "description": "When not False, automatically segment the image before fitting. When True, threshold_otsu from scikit-image is used and the brighter pixels are taken.When a callable is given, it is used as the segmentation function."
-              },
-              "autosegment_margin": {
-                "default": 10,
-                "title": "Autosegment Margin",
-                "type": "integer",
-                "description": "Margin of the segmentation mask to the thresholded region."
-              },
               "epsilon": {
                 "default": 0.1,
                 "title": "Epsilon",
                 "type": "number",
                 "description": "Weight regularization term."
+              },
+              "fitting_mode": {
+                "default": "approximate",
+                "enum": [
+                  "approximate",
+                  "ladmap"
+                ],
+                "title": "Fitting Mode",
+                "type": "string",
+                "description": "Fitting mode for optimization. Must be either \"approximate\" or \"ladmap\"."
               },
               "max_iterations": {
                 "default": 500,
@@ -72,12 +70,6 @@
                 "type": "integer",
                 "description": "Maximum number of reweighting iterations for baseline."
               },
-              "max_workers": {
-                "default": 8,
-                "title": "Max Workers",
-                "type": "integer",
-                "description": "Maximum number of threads used for processing."
-              },
               "mu_coef": {
                 "default": 12.5,
                 "title": "Mu Coef",
@@ -101,6 +93,13 @@
                 "title": "Reweighting Tol",
                 "type": "number",
                 "description": "Reweighting tolerance in mean absolute difference of images."
+              },
+              "resize_params": {
+                "additionalProperties": true,
+                "default": {},
+                "title": "Resize Params",
+                "type": "object",
+                "description": "Parameters for the resize function when downsampling images."
               },
               "rho": {
                 "default": 1.5,
@@ -245,18 +244,17 @@
           "advanced_basic_parameters": {
             "$ref": "#/$defs/AdvancedBaSiCParameters",
             "default": {
-              "autosegment": false,
-              "autosegment_margin": 10,
               "epsilon": 0.1,
+              "fitting_mode": "approximate",
               "max_iterations": 500,
               "max_mu_coef": 10000000.0,
               "max_reweight_iterations": 10,
               "max_reweight_iterations_baseline": 5,
-              "max_workers": 8,
               "mu_coef": 12.5,
               "optimization_tol": 0.001,
               "optimization_tol_diff": 0.01,
               "reweighting_tol": 0.01,
+              "resize_params": {},
               "rho": 1.5,
               "sort_intensity": false,
               "sparse_cost_darkfield": 0.01,
@@ -875,6 +873,7 @@
                 "description": "Specifies how to interpret the identifier. Can be \"label\", \"wavelength_id\", or \"index\" (must be an integer)."
               },
               "identifiers": {
+                "default": [],
                 "items": {
                   "type": "string"
                 },
@@ -1258,6 +1257,14 @@
               },
               "normalize": {
                 "$ref": "#/$defs/CustomNormalizer",
+                "default": {
+                  "mode": "default",
+                  "lower_percentile": null,
+                  "upper_percentile": null,
+                  "lower_bound": null,
+                  "upper_bound": null,
+                  "histogram_name": "channel_histograms"
+                },
                 "title": "Normalize",
                 "description": "Set image normalization method and parameters."
               }
@@ -1428,6 +1435,14 @@
               },
               "normalize": {
                 "$ref": "#/$defs/CustomNormalizer",
+                "default": {
+                  "mode": "default",
+                  "lower_percentile": null,
+                  "upper_percentile": null,
+                  "lower_bound": null,
+                  "upper_bound": null,
+                  "histogram_name": "channel_histograms"
+                },
                 "title": "Normalize",
                 "description": "Set image normalization method and parameters."
               }
