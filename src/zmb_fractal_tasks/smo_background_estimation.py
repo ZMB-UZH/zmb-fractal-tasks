@@ -1,6 +1,7 @@
 """Fractal task to estimate background using SMO."""
 
-from typing import Optional
+from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -14,31 +15,49 @@ from smo import SMO
 def smo_background_estimation(
     *,
     zarr_url: str,
+    pyramid_level: str = "0",
     sigma: float = 0.0,
     size: int = 7,
     subtract_background: bool = False,
-    new_well_sub_group: Optional[str] = None,
-) -> dict:
+    overwrite_input_image: bool = True,
+    new_well_subgroup_suffix: str = "_BG_subtracted",
+) -> dict[str, Any]:
     """Estimates background of each FOV using SMO.
 
-    Only works with 2D data at the moment.
+    Uses the SMO algorithm to estimate background for each FOV & channel. In
+    short, SMO uses local gradient amount to identify background pixels. See
+    the SMO publication for details: https://doi.org/10.1364/JOSAA.477468
+
+    Limitation: Currently, does not support 3D or time-lapse images.
 
     Args:
         zarr_url: Absolute path to the OME-Zarr image.
             (standard argument for Fractal tasks, managed by Fractal server).
-        sigma : Standard deviation for Gaussian kernel of pre-filter.
-        size : Averaging window size in pixels. Should be smaller than
-            foreground objects.
-        subtract_background : If True, subtract the estimated background from
+        pyramid_level: Pyramid level to use for background estimation. Choose
+            `0` to process at full resolution.
+        sigma: Standard deviation for Gaussian pre-filter to reduce noise.
+        size: Window size in pixels to average gradient. Should be smaller than
+            foreground objects & background regions.
+        subtract_background: If True, subtract the estimated background from
             the image (clipping at zero).
-        new_well_sub_group: Name of new well-subgroup. If None, the input image
-            is overwritten. This is only needed if subtract_background is True.
+        overwrite_input_image: If True, overwrite the input image. If False,
+            create a new well sub-group to store the corrected image. Only used
+            if subtract_background is True.
+        new_well_subgroup_suffix: Suffix to add to the new well sub-group
+            name. Only used if overwrite_input_image is False.
     """
     omezarr = open_ome_zarr_container(zarr_url)
-    source_image = omezarr.get_image()
-    roi_table = omezarr.get_table("FOV_ROI_table", check_type="roi_table")
+    source_image = omezarr.get_image(path=pyramid_level)
 
-    # TODO: handle case where no channel names are available?
+    # TODO: support time-lapses?
+    if source_image.is_time_series:
+        if source_image.dimensions.get("t") > 1:
+            raise ValueError(
+                "SMO background estimation does not yet support time-lapse images."
+            )
+    # TODO: Add options for iterating & masking
+    roi_table = omezarr.get_table("FOV_ROI_table")
+
     channels = source_image.channel_labels
 
     # Estimate BG for each FOV & channel
@@ -58,18 +77,20 @@ def smo_background_estimation(
 
     # Apply BG subtraction
     if subtract_background:
+        # open source image again at highest resolution
+        source_image = omezarr.get_image()
         # open new ome-zarr
-        if new_well_sub_group is not None:
-            # TODO: see how to return new image-list
-            raise ValueError("new_well_sub_group is not implemented yet.")
-            # new_zarr_url = Path(zarr_url).parent / new_well_sub_group
-            # output_omezarr = omezarr.derive_image(new_zarr_url, overwrite=True)
-            # # copy all tables
-            # for table_name in omezarr.list_tables():
-            #     output_omezarr.add_table(table_name, omezarr.get_table(table_name))
-            # # TODO: copy all labels?
-        else:
+        if overwrite_input_image:
             output_omezarr = omezarr
+        else:
+            new_zarr_url = Path(zarr_url).parent / (
+                Path(zarr_url).stem + new_well_subgroup_suffix
+            )
+            output_omezarr = omezarr.derive_image(new_zarr_url, overwrite=True)
+            # copy all tables
+            for table_name in omezarr.list_tables():
+                output_omezarr.add_table(table_name, omezarr.get_table(table_name))
+            # TODO: copy all labels? -> how best?
         output_image = output_omezarr.get_image()
 
         # cycle through FOVs and channels and subtract BG
@@ -82,6 +103,17 @@ def smo_background_estimation(
                 output_image.set_roi(patch=patch_corrected, roi=roi, c=channel_idx)
 
         output_image.consolidate()
+
+        if overwrite_input_image:
+            image_list_updates = {}
+        else:
+            image_list_updates = {
+                "image_list_updates": [{"zarr_url": new_zarr_url, "origin": zarr_url}]
+            }
+    else:
+        image_list_updates = {}
+
+    return image_list_updates
 
 
 def estimate_BG_smo(patch: np.ndarray, sigma: float, size: int) -> float:

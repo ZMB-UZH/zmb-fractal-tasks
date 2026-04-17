@@ -1,50 +1,107 @@
 """Contains the list of tasks available to fractal."""
 
 from fractal_task_tools.task_models import (
+    CompoundTask,
     NonParallelTask,
     ParallelTask,
 )
 
 AUTHORS = "Flurin Sturzenegger"
 DOCS_LINK = None
-INPUT_MODELS = []
+INPUT_MODELS = [
+    (
+        "zmb_fractal_tasks",
+        "basic_correct_illumination_plate_init.py",
+        "OutputOptions",
+    ),
+    (
+        "zmb_fractal_tasks",
+        "basic_correct_illumination_plate_init.py",
+        "CoreBaSiCParameters",
+    ),
+    (
+        "zmb_fractal_tasks",
+        "basic_correct_illumination_plate_init.py",
+        "AdvancedBaSiCParameters",
+    ),
+    (
+        "zmb_fractal_tasks",
+        "utils/normalization.py",
+        "NormalizedChannelInputModel",
+    ),
+    (
+        "zmb_fractal_tasks",
+        "utils/normalization.py",
+        "CustomNormalizer",
+    ),
+    (
+        "zmb_fractal_tasks",
+        "measure_features.py",
+        "LabelInput",
+    ),
+    (
+        "zmb_fractal_tasks",
+        "assign_to_parent_label.py",
+        "ParentLabelInput",
+    ),
+    (
+        "zmb_fractal_tasks",
+        "assign_to_parent_label.py",
+        "AggregationOptions",
+    ),
+    (
+        "zmb_fractal_tasks",
+        "assign_to_parent_label.py",
+        "AdditionalOptions",
+    ),
+    (
+        "zmb_fractal_tasks",
+        "utils/channel_utils.py",
+        "MeasurementChannels",
+    ),
+]
 
 TASK_LIST = [
-    NonParallelTask(
-        name="Aggregate all channel histograms for plate",
-        executable="aggregate_plate_histograms.py",
-        meta={"cpus_per_task": 1, "mem": 4000},
-        category="Measurement",
-        tags=["Percentiles", "Histogram", "Normalization"],
-    ),
-    ParallelTask(
-        name="BaSiC: Apply illumination profile",
+    CompoundTask(
+        name="BaSiC: Calculate and apply illumination correction for plate",
+        input_types={"illumination_corrected": False},
+        executable_init="basic_correct_illumination_plate_init.py",
         executable="basic_apply_illumination_profile.py",
-        meta={"cpus_per_task": 1, "mem": 4000},
-        category="Image Processing",
-        tags=["Illumination correction", "BaSiC"],
-        # docs_info="file:docs_info/thresholding_task.md",
-    ),
-    NonParallelTask(
-        name="BaSiC: Calculate illumination profile for plate",
-        executable="basic_calculate_illumination_profile_plate.py",
+        output_types={"illumination_corrected": True},
+        meta_init={"cpus_per_task": 8, "mem": 32000},
         meta={"cpus_per_task": 1, "mem": 4000},
         category="Image Processing",
         tags=["Illumination correction", "BaSiC"],
     ),
     ParallelTask(
-        name="Calculate channel-histograms for each image",
-        executable="calculate_histograms.py",
+        name="Apply illumination correction",
+        executable="illumination_correction.py",
         meta={"cpus_per_task": 1, "mem": 4000},
-        category="Measurement",
-        tags=["Percentiles", "Histogram", "Normalization"],
+        category="Image Processing",
+        tags=["Illumination correction"],
+    ),
+    CompoundTask(
+        name="Merge acquisitions along channel axis",
+        executable_init="combine_acquisitions_init.py",
+        executable="combine_acquisitions_parallel.py",
+        meta_init={"cpus_per_task": 1, "mem": 4000},
+        meta={"cpus_per_task": 1, "mem": 4000},
+        category="Utility",
+        tags=["Merge", "Acquisitions", "Combine"],
     ),
     ParallelTask(
-        name="Calculate percentiles",
-        executable="calculate_percentiles.py",
+        name="Delete labels from OME-Zarr image",
+        executable="delete_labels.py",
+        meta={"cpus_per_task": 1, "mem": 500},
+        category="Utility",
+        tags=["Labels", "Delete"],
+    ),
+    ParallelTask(
+        name="Update display range",
+        executable="update_display_range.py",
         meta={"cpus_per_task": 1, "mem": 4000},
         category="Measurement",
-        tags=["Percentiles", "Histogram", "Normalization"],
+        tags=["Percentiles", "Histogram", "Normalization", "Contrast", "Auto Contrast"],
     ),
     ParallelTask(
         name="Expand segmentation",
@@ -54,6 +111,20 @@ TASK_LIST = [
         tags=["Expand"],
     ),
     ParallelTask(
+        name="Histograms: Calculate channel-histograms for each image",
+        executable="histogram_calculate.py",
+        meta={"cpus_per_task": 1, "mem": 4000},
+        category="Measurement",
+        tags=["Percentiles", "Histogram", "Normalization"],
+    ),
+    NonParallelTask(
+        name="Histograms: Aggregate plate-histograms",
+        executable="histogram_aggregate_plate.py",
+        meta={"cpus_per_task": 1, "mem": 4000},
+        category="Measurement",
+        tags=["Percentiles", "Histogram", "Normalization"],
+    ),
+    ParallelTask(
         name="Measure features",
         executable="measure_features.py",
         meta={"cpus_per_task": 1, "mem": 4000},
@@ -61,11 +132,11 @@ TASK_LIST = [
         tags=["Measure"],
     ),
     ParallelTask(
-        name="Measure parent label",
-        executable="measure_parent_label.py",
+        name="Assign to parent label",
+        executable="assign_to_parent_label.py",
         meta={"cpus_per_task": 1, "mem": 4000},
         category="Measurement",
-        tags=["Measure"],
+        tags=["Measure", "Assign", "Aggregate"],
     ),
     ParallelTask(
         name="Measure shortest distance to label",
@@ -94,5 +165,12 @@ TASK_LIST = [
         meta={"cpus_per_task": 1, "mem": 4000},
         category="Image Processing",
         tags=["Background", "SMO", "BG", "BG Subtraction", "Background Subtraction"],
+    ),
+    NonParallelTask(
+        name="Export table as CSV",
+        executable="export_table_as_csv.py",
+        meta={"cpus_per_task": 1, "mem": 4000},
+        category="Utility",
+        tags=["Export", "CSV", "Table"],
     ),
 ]

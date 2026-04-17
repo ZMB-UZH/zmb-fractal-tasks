@@ -10,19 +10,21 @@ from pydantic import validate_call
 
 
 @validate_call
-def calculate_percentiles(
+def update_display_range(
     *,
     zarr_url: str,
-    level: str = "0",
-    percentiles: Sequence[float] = (1, 99),
-) -> dict:
-    """Calculate percentiles of image and write them to omero-channels.
+    pyramid_level: str = "0",
+    percentiles: Sequence[float] = (0.5, 99.5),
+) -> None:
+    """Update display range of image based on percentiles. (Saved in omero metadata).
 
     Args:
         zarr_url: Absolute path to the OME-Zarr image.
             (standard argument for Fractal tasks, managed by Fractal server).
-        level: Resolution level to calculate percentiles on.
+        pyramid_level: Resolution level to calculate percentiles on. Choose `0`
+            for full resolution.
         percentiles: lower and upper percentiles to calculate
+            e.g. [0.5, 99.5]
     """
     # Preliminary checks
     for percentile in percentiles:
@@ -33,9 +35,9 @@ def calculate_percentiles(
 
     omezarr = open_ome_zarr_container(zarr_url)
 
-    image = omezarr.get_image(path=level)
+    image = omezarr.get_image(path=pyramid_level)
 
-    roi_table = omezarr.get_table("FOV_ROI_table", check_type="roi_table")
+    roi_table = omezarr.get_table("FOV_ROI_table")
 
     # TODO: handle case where no channel names are available?
     channels = image.channel_labels
@@ -104,4 +106,4 @@ def get_percentiles(
 if __name__ == "__main__":
     from fractal_task_tools.task_wrapper import run_fractal_task
 
-    run_fractal_task(task_function=calculate_percentiles)
+    run_fractal_task(task_function=update_display_range)

@@ -1,7 +1,3 @@
-from zmb_fractal_tasks.basic_apply_illumination_profile import (
-    InitArgsBaSiCApply,
-    basic_apply_illumination_profile,
-)
 from zmb_fractal_tasks.basic_correct_illumination_plate_init import (
     AdvancedBaSiCParameters,
     CoreBaSiCParameters,
@@ -10,8 +6,7 @@ from zmb_fractal_tasks.basic_correct_illumination_plate_init import (
 )
 
 
-def test_basic_apply_illumination_profile(tmpdir, zarr_path):
-    # First calculate illumination profiles
+def test_basic_correct_illumination_plate_init(tmpdir, zarr_path):
     core_parameters = CoreBaSiCParameters(
         n_images_sampled=200,
         get_darkfield=True,
@@ -20,7 +15,10 @@ def test_basic_apply_illumination_profile(tmpdir, zarr_path):
         random_seed=11,
     )
     advanced_basic_parameters = AdvancedBaSiCParameters()
-    output_options = OutputOptions()
+    output_options = OutputOptions(
+        overwrite_input_image=True,
+        subtract_median_baseline=False,
+    )
 
     result = basic_correct_illumination_plate_init(
         zarr_urls=[str(zarr_path / "B" / "03" / "0")],
@@ -31,16 +29,7 @@ def test_basic_apply_illumination_profile(tmpdir, zarr_path):
         output_options=output_options,
     )
 
-    # Apply illumination correction
-    init_args = InitArgsBaSiCApply(
-        illumination_profiles_folder=str(tmpdir / "illumination_profiles"),
-        subtract_median_baseline=False,
-        overwrite_input_image=False,
-        new_well_subgroup_suffix="illumination_corrected",
-    )
-
-    basic_apply_illumination_profile(
-        zarr_url=str(zarr_path / "B" / "03" / "0"),
-        init_args=init_args,
-    )
+    # Check that parallelization list is returned
+    assert "parallelization_list" in result
+    assert len(result["parallelization_list"]) == 1
     # TODO: Check outputs

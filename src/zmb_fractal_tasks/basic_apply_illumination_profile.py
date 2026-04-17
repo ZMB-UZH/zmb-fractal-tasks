@@ -2,63 +2,79 @@
 
 import logging
 from pathlib import Path
-from typing import Optional
+from typing import Any
 
 import numpy as np
 from ngio import open_ome_zarr_container
-from pydantic import validate_call
+from pydantic import BaseModel, validate_call
 
+
+class InitArgsBaSiCApply(BaseModel):
+    """Init Args for basic_apply_illumination_profile task.
+
+    Args:
+        illumination_profiles_folder: Path of folder of illumination profiles.
+            If left empty, looks for illumination profiles in
+            zarr_dir/basic_illumination_profiles.
+        subtract_median_baseline: If True, subtract the median of all baseline
+            values from the corrected image.
+        overwrite_input_image: If True, overwrite the input image. If False,
+            create a new well sub-group to store the corrected image.
+        new_well_subgroup_suffix: Suffix to add to the new well sub-group
+            name. Only used if overwrite_input_image is False.
+    """
+    illumination_profiles_folder: str
+    subtract_median_baseline: bool = False
+    overwrite_input_image: bool = True
+    new_well_subgroup_suffix: str = "illumination_corrected"
 
 @validate_call
 def basic_apply_illumination_profile(
     *,
     zarr_url: str,
-    illumination_profiles_folder: str,
-    subtract_median_baseline: bool = False,
-    new_well_sub_group: Optional[str] = None,
-) -> dict:
+    init_args: InitArgsBaSiCApply,
+
+) -> dict[str, Any]:
     """Applies illumination correction to the OME-Zarr.
+
+    Uses illumination profiles calculated using the 'BaSiC: Calculate
+    illumination profile for plate' task.
 
     Args:
         zarr_url: Absolute path to the OME-Zarr image.
             (standard argument for Fractal tasks, managed by Fractal server).
-        illumination_profiles_folder: Path of folder of illumination profiles.
-        subtract_median_baseline: If True, subtract the median of all baseline
-            values from the corrected image.
-        new_well_sub_group: Name of new well-subgroup. If this is set,
-            overwrite_input needs to be False.
-            Example: `0_illumination_corrected`.
+        init_args: Initialization arguments from the init task.
     """
     omezarr = open_ome_zarr_container(zarr_url)
 
-    if new_well_sub_group is not None:
-        # TODO: see how to return new image-list
-        raise ValueError("new_well_sub_group is not implemented yet.")
-        # new_zarr_url = Path(zarr_url).parent / new_well_sub_group
-        # output_omezarr = omezarr.derive_image(new_zarr_url, overwrite=True)
-        # # copy all tables
-        # for table_name in omezarr.list_tables():
-        #     output_omezarr.add_table(table_name, omezarr.get_table(table_name))
-        # # TODO: copy all labels?
-    else:
+    if init_args.overwrite_input_image:
         output_omezarr = omezarr
+    else:
+        new_zarr_url = Path(zarr_url).parent / (
+            Path(zarr_url).stem + "_" + init_args.new_well_subgroup_suffix
+        )
+        output_omezarr = omezarr.derive_image(new_zarr_url, overwrite=True)
+        # copy all tables
+        for table_name in omezarr.list_tables():
+            output_omezarr.add_table(table_name, omezarr.get_table(table_name))
+        # TODO: copy all labels? -> how best?
 
     source_image = omezarr.get_image()
     output_image = output_omezarr.get_image()
 
-    roi_table = omezarr.get_table("FOV_ROI_table", check_type="roi_table")
+    roi_table = omezarr.get_table("FOV_ROI_table")
 
     # TODO: handle case where no channel names are available?
-    channels = source_image.channel_labels
+    channels = source_image.wavelength_ids
 
     # Process each channel & FOV
     for channel in channels:
         # load illumination profiles
-        channel_idx = source_image.channel_labels.index(channel)
-        folder_path = Path(illumination_profiles_folder) / channel
+        channel_idx = source_image.wavelength_ids.index(channel)
+        folder_path = Path(init_args.illumination_profiles_folder) / channel
         flatfield = np.load(folder_path / "flatfield.npy")
         darkfield = np.load(folder_path / "darkfield.npy")
-        if subtract_median_baseline:
+        if init_args.subtract_median_baseline:
             baseline_array = np.load(folder_path / "baseline.npy")
             baseline = int(np.median(baseline_array))
         else:
@@ -66,17 +82,25 @@ def basic_apply_illumination_profile(
         # Correct each FOV
         for roi in roi_table.rois():
             patch = source_image.get_roi(
-                roi, c=channel_idx, axes_order=["c","z","y","x"]
+                roi, c=channel_idx, axes_order=["c", "z", "y", "x"]
             )
             patch_corrected = correct(patch, flatfield, darkfield, baseline)
             output_image.set_roi(
                 patch=patch_corrected,
                 roi=roi,
                 c=channel_idx,
-                axes_order=["c","z","y","x"],
+                axes_order=["c", "z", "y", "x"],
             )
 
     output_image.consolidate()
+
+    if init_args.overwrite_input_image:
+        image_list_updates = {"image_list_updates": [{"zarr_url": zarr_url}]}
+    else:
+        image_list_updates = {
+            "image_list_updates": [{"zarr_url": new_zarr_url, "origin": zarr_url}]
+        }
+    return image_list_updates
 
 
 def correct(

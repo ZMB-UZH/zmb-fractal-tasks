@@ -19,9 +19,9 @@ def measure_shortest_distance(
     *,
     zarr_url: str,
     output_table_name: str,
-    label_name: str,
+    input_label_name: str,
     target_label_names: Sequence[str],
-    level: str = "0",
+    pyramid_level: str = "0",
     roi_table_name: str = "FOV_ROI_table",
     append: bool = True,
     overwrite: bool = False,
@@ -36,32 +36,34 @@ def measure_shortest_distance(
         zarr_url: Path or url to the individual OME-Zarr image to be processed.
             (standard argument for Fractal tasks, managed by Fractal server).
         output_table_name: Name of the output table.
-        label_name: Name of the label that contains the seeds.
+        input_label_name: Name of the label that contains the seeds.
             Needs to exist in OME-Zarr file.
         target_label_names: Names of the target labels to measure distance to.
-        level: Resolution of the label image to use for calculations.
+        pyramid_level: Resolution level of the label image to use for
+            calculations. Choose `0` for full resolution.
+            Only tested for 2D images at level 0.
         roi_table_name: Name of the ROI table to iterate over.
         append: If True, append new measurements to existing table.
         overwrite: Only used if append is False. If True, overwrite existing
             table. If False, raise error if table already exists.
     """
     omezarr = open_ome_zarr_container(zarr_url)
-    label_image = omezarr.get_label(label_name, path=level)
+    label_image = omezarr.get_label(input_label_name, path=pyramid_level)
     target_label_images = {
-        name: omezarr.get_label(name, path=level) for name in target_label_names
+        name: omezarr.get_label(name, path=pyramid_level) for name in target_label_names
     }
 
     # find plate and well names
     plate_name = Path(Path(zarr_url).as_posix().split(".zarr/")[0]).stem
     try:
         component = Path(zarr_url).as_posix().split(".zarr/")[1]
-        well_name = component.split("/")[0] + component.split("/")[1]
+        well_name = component.split("/")[0] + f"{int(component.split('/')[1]):02d}"
     except Exception:
         well_name = "None"
 
     logging.info(f"Calculating {output_table_name} for well {well_name}")
 
-    roi_table = omezarr.get_table(roi_table_name, check_type="roi_table")
+    roi_table = omezarr.get_table(roi_table_name)
 
     measurements = []
     for roi in roi_table.rois():
@@ -93,9 +95,7 @@ def measure_shortest_distance(
     df_measurements = pd.concat(measurements, axis=0)
 
     if append and (output_table_name in omezarr.list_tables()):
-        feat_table_org = omezarr.get_table(
-            output_table_name, check_type="feature_table"
-        )
+        feat_table_org = omezarr.get_table(output_table_name)
         df_org = feat_table_org.dataframe
         # Ensure same index (labels) to avoid misalignment
         if not df_org.index.equals(df_measurements.index):
@@ -112,7 +112,7 @@ def measure_shortest_distance(
     if append:
         overwrite = True
 
-    feat_table = FeatureTable(df_measurements, reference_label=label_name)
+    feat_table = FeatureTable(df_measurements, reference_label=input_label_name)
     omezarr.add_table(output_table_name, feat_table, overwrite=overwrite)
 
 
@@ -141,13 +141,29 @@ def measure_shortest_distance_ROI(
     if optional_columns is None:
         optional_columns = {}
 
+    # Set default prefix list
+    if target_prefix_list is None:
+        target_prefix_list = [f"dist{i}" for i in range(len(target_label_list))]
+
+    # Check if labels are empty (all zeros)
+    unique_labels = np.unique(labels)[np.unique(labels) != 0]
+    is_empty = len(unique_labels) == 0
+
+    if is_empty:
+        # Create empty dataframe with all expected columns
+        columns = list(optional_columns.keys()) + [
+            f"shortest_distance_to_{target_prefix}"
+            for target_prefix in target_prefix_list
+        ]
+        df = pd.DataFrame(columns=columns)
+        df.index.name = "label"
+        return df
+
     # initiate dataframe
-    df = pd.DataFrame(index=np.unique(labels)[np.unique(labels) != 0])
+    df = pd.DataFrame(index=unique_labels)
     df.index.name = "label"
 
     # calculated shortest distances
-    if target_prefix_list is None:
-        target_prefix_list = [f"dist{i}" for i in range(len(target_label_list))]
     df_dist_list = []
     for target_label, target_prefix in zip(
         target_label_list, target_prefix_list, strict=True

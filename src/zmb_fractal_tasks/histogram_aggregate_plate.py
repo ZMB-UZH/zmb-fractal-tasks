@@ -3,7 +3,6 @@
 import logging
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Optional
 
 import zarr
 from ngio import open_ome_zarr_container
@@ -18,16 +17,23 @@ from zmb_fractal_tasks.utils.histogram import (
 
 
 @validate_call
-def aggregate_plate_histograms(
+def histogram_aggregate_plate(
     *,
     zarr_urls: list[str],
     zarr_dir: str,
     histogram_input_name: str = "channel_histograms",
-    omero_percentiles: Optional[Sequence[float]] = None,
-) -> dict:
-    """Find all channel histograms in a plate and combine them.
+    histogram_output_name: str = "channel_histograms_plate",
+    update_display_range: bool = True,
+    display_range_percentiles: Sequence[float] = (0.5, 99.5),
+    overwrite: bool = True,
+) -> None:
+    """Combine all histograms in a plate and write to table in each image.
 
-    In each image, a new table is created with the combined histograms.
+    All channel intensity histograms in each image are loaded and combined. The
+    resulting combined histograms are then saved in a new table in each image.
+
+    ONE FIRST NEEDS TO RUN THE "Histograms: Calculate channel-histograms for each image"
+    TASK!
 
     Args:
         zarr_urls: List of paths or urls to the individual OME-Zarr images to
@@ -36,9 +42,15 @@ def aggregate_plate_histograms(
         zarr_dir: Not used for this task.
             (Standard argument for Fractal tasks, managed by Fractal server).
         histogram_input_name: Table name of the histogram table to be combined.
-        omero_percentiles: Percentiles to calculate from the combine histogram
-            and add to the omero metadata.
-            If None, no percentiles are calculated.
+            (Output of the "Histograms: Calculate channel-histograms for each image"
+            task).
+        histogram_output_name: Table name of the output combined histogram.
+        update_display_range: If True, update the display range of the images.
+            (Saved in the omero metadata of the zarr file).
+        display_range_percentiles: Percentiles (e.g. [0.5, 99.5]) to use
+            for display range calculation. (Only used if update_display_range
+            is True).
+        overwrite: If True, overwrite existing histogram table.
     """
     # identify plates
     plate_to_urls = {}
@@ -56,7 +68,7 @@ def aggregate_plate_histograms(
             ome_zarr_container = open_ome_zarr_container(zarr_url)
             table = ome_zarr_container.get_table(histogram_input_name)
             adata = table.anndata
-            levels.append(adata.uns["level"])
+            levels.append(adata.uns["pyramid_level"])
             histo_dict = anndata_to_histograms(adata)
             for channel, histo in histo_dict.items():
                 if channel not in combined_channel_histogram:
@@ -79,18 +91,19 @@ def aggregate_plate_histograms(
         generic_table = GenericTable(table_data=adata)
         for zarr_url in plate_zarr_urls:
             omezarr = open_ome_zarr_container(zarr_url)
-            omezarr.add_table(histogram_input_name+"_plate", generic_table)
+            omezarr.add_table(histogram_output_name, generic_table, overwrite=overwrite)
 
         # calculate percentiles & write omero metadata
-        if omero_percentiles is not None:
-            if len(omero_percentiles) != 2:
+        if update_display_range:
+            if len(display_range_percentiles) != 2:
                 raise ValueError(
-                    "omero_percentiles should be a list of two values: [lower, upper]"
+                    "display_range_percentiles should be a list of two "
+                    "values: [lower, upper]"
                 )
             percentile_values = {}
             for channel, histo in combined_channel_histogram.items():
                 percentile_values[channel] = histo.get_quantiles(
-                    [p / 100 for p in omero_percentiles]
+                    [p / 100 for p in display_range_percentiles]
                 )
             # write omero metadata for all images in the plate
             for zarr_url in plate_zarr_urls:
@@ -106,4 +119,4 @@ def aggregate_plate_histograms(
 if __name__ == "__main__":
     from fractal_task_tools.task_wrapper import run_fractal_task
 
-    run_fractal_task(task_function=aggregate_plate_histograms)
+    run_fractal_task(task_function=histogram_aggregate_plate)

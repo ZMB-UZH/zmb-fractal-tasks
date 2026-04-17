@@ -6,9 +6,11 @@ from zmb_fractal_tasks.smo_background_estimation import (
 def test_smo_background_estimation(zarr_path):
     smo_background_estimation(
         zarr_url=str(zarr_path / "B" / "03" / "0"),
+        pyramid_level="0",
         sigma=0,
         size=7,
         subtract_background=False,
-        new_well_sub_group=None,
+        overwrite_input_image=False,
+        new_well_subgroup_suffix="BG_subtracted",
     )
     # TODO: Check outputs

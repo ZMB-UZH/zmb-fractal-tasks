@@ -3,178 +3,208 @@
 import logging
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 import pandas as pd
 from ngio import open_ome_zarr_container
+from ngio.experimental.iterators import FeatureExtractorIterator
 from ngio.tables import FeatureTable
-from pydantic import validate_call
+from ngio.transforms import ZoomTransform
+from pydantic import BaseModel, validate_call
 
-from zmb_fractal_tasks.from_fractal_tasks_core.channels import (
-    ChannelInputModel,
-    get_omero_channel_list,
-)
+from zmb_fractal_tasks.utils.channel_utils import MeasurementChannels
 from zmb_fractal_tasks.utils.regionprops_table_plus import regionprops_table_plus
+
+
+class LabelInput(BaseModel):
+    """Input label configuration.
+
+    Args:
+        input_label_name (str): Name of the label to be used for measurement.
+        output_table_name (str): Name of corresponding output feature table.
+    """
+
+    input_label_name: str
+    output_table_name: str
 
 
 @validate_call
 def measure_features(
     *,
     zarr_url: str,
-    output_table_name: str,
-    label_name: str,
-    channels_to_include: Optional[Sequence[ChannelInputModel]] = None,
-    channels_to_exclude: Optional[Sequence[ChannelInputModel]] = None,
-    structure_props: Optional[Sequence[str]] = None,
-    intensity_props: Optional[Sequence[str]] = None,
-    level: str = "0",
-    roi_table_name: str = "FOV_ROI_table",
-    append: bool = True,
-    overwrite: bool = False,
+    input_labels: Sequence[LabelInput],
+    channels_to_measure: MeasurementChannels,
+    structure_props: Sequence[str] = ["area"],
+    intensity_props: Sequence[str] = [
+        "intensity_mean",
+        "intensity_std",
+        "intensity_total",
+    ],
+    roi_table: str = "FOV_ROI_table",
+    append_to_table: bool = True,
 ) -> None:
-    """Calculate features based on label image and intensity image (optional).
+    """Measure shape and intensity features of labels and write to feature table.
 
-    Takes a label image and an optional intensity image and calculates
-    morphology, intensity and texture features in 2D. Writes results to a
-    feature table in the OME-Zarr file. If a feature table with the same name
-    already exists, the features will be added to the existing table.
+    This task takes one or more label images and measures specified shape and
+    intensity features for each label, using the skimage.measure.regionprops
+    function.
 
     Args:
         zarr_url: Path or url to the individual OME-Zarr image to be processed.
             (standard argument for Fractal tasks, managed by Fractal server).
-        output_table_name: Name of the output table.
-        label_name: Name of the label that contains the seeds.
-            Needs to exist in OME-Zarr file.
-        channels_to_include: List of channels to include for intensity
-            and texture measurements. Use the channel label to indicate
-            single channels. If None, all channels are included.
-        channels_to_exclude: List of channels to exclude for intensity
-            and texture measurements. Use the channel label to indicate
-            single channels. If None, no channels are excluded.
+        input_labels: Label(s) to be measured.
+        channels_to_measure: Channels for intensity measurements.
         structure_props: List of regionprops structure properties to measure.
+            E.g. 'area', 'perimeter', 'solidity'.
+            See https://scikit-image.org/docs/stable/api/skimage.measure.html#skimage.measure.regionprops
+            for full list of possible properties.
         intensity_props: List of regionprops intensity properties to measure.
-                ROI_table_name: Name of the ROI table to process.
-        level: Resolution of the label image to calculate features.
-            Only tested for level 0.
-        roi_table_name: Name of the ROI table to iterate over.
-        append: If True, append new measurements to existing table.
-        overwrite: Only used if append is False. If True, overwrite existing
-            table. If False, raise error if table already exists.
+            E.g. 'intensity_mean', 'intensity_std', 'intensity_total'.
+            See https://scikit-image.org/docs/stable/api/skimage.measure.html#skimage.measure.regionprops
+            for full list of possible properties.
+        roi_table: ROI table name to iterate over (e.g 'FOV_ROI_table').
+            If left empty, measure over whole image.
+        append_to_table: If True, append new measurements to existing table.
+            If False, overwrite existing table.
     """
-    omezarr = open_ome_zarr_container(zarr_url)
-    label_image = omezarr.get_label(label_name, path=level)
-    intensity_image = omezarr.get_image(path=level)
+    ome_zarr = open_ome_zarr_container(zarr_url)
+    image = ome_zarr.get_image()
+
+    if ome_zarr.is_time_series:
+        raise NotImplementedError("Time series are not yet supported.")
 
     # find plate and well names
     plate_name = Path(Path(zarr_url).as_posix().split(".zarr/")[0]).stem
     try:
         component = Path(zarr_url).as_posix().split(".zarr/")[1]
-        well_name = component.split("/")[0] + component.split("/")[1]
+        well_name = component.split("/")[0] + f"{int(component.split('/')[1]):02d}"
     except Exception:
         well_name = "None"
 
-    logging.info(f"Calculating {output_table_name} for well {well_name}")
+    if channels_to_measure.use_all_channels:
+        channels = image.channel_labels
+    else:
+        channel_selection_models = channels_to_measure.to_list()
+        # convert to channel labels
+        # TODO: figure out how to better get labels from ChannelSelectionModel
+        channels = []
+        for channel_selection_model in channel_selection_models:
+            if channel_selection_model.mode == "index":
+                channel_idx = int(channel_selection_model.identifier)
+                channels.append(image.channel_labels[channel_idx])
+            elif channel_selection_model.mode == "wavelength_id":
+                channel_idx = image.get_channel_idx(channel_selection_model.identifier)
+                channels.append(image.channel_labels[channel_idx])
+            else:
+                channels.append(channel_selection_model.identifier)
 
-    roi_table = omezarr.get_table(roi_table_name, check_type="roi_table")
+    for input_label_model in input_labels:
+        logging.info(f"Processing label: {input_label_model.input_label_name}")
+        input_label_name = input_label_model.input_label_name
+        output_table_name = input_label_model.output_table_name
+        label = ome_zarr.get_label(input_label_name)
 
-    measurements = []
-    for roi in roi_table.rois():
-        # load label image
-        label_patch = label_image.get_roi(roi, mode="numpy", axes_order="zyx")
-
-        # load intensity images
-        # first, get all channels in the acquisition and find the ones of interest
-        # TODO: handle with ngio
-        omero_channels = get_omero_channel_list(image_zarr_path=zarr_url)
-        if channels_to_include:
-            channel_labels_to_include = [c.label for c in channels_to_include]
-            channel_wavelength_ids_to_include = [
-                c.wavelength_id for c in channels_to_include
-            ]
-            omero_channels = [
-                c
-                for c in omero_channels
-                if (c.label in channel_labels_to_include)
-                or (c.wavelength_id in channel_wavelength_ids_to_include)
-            ]
-        if channels_to_exclude:
-            channel_labels_to_exclude = [c.label for c in channels_to_exclude]
-            channel_wavelength_ids_to_exclude = [
-                c.wavelength_id for c in channels_to_exclude
-            ]
-            omero_channels = [
-                c
-                for c in omero_channels
-                if (c.label not in channel_labels_to_exclude)
-                and (c.wavelength_id not in channel_wavelength_ids_to_exclude)
-            ]
-        intensity_patches = {}
-        for omero_channel in omero_channels:
-            channel_idx = intensity_image.channel_labels.index(omero_channel.label)
-            intensity_patches[omero_channel.wavelength_id] = intensity_image.get_roi(
-                roi, c=channel_idx, mode="numpy", axes_order="czyx"
-            )
-
-        measurement = measure_features_ROI(
-            labels=label_patch,
-            intensities_list=[data[0] for data in intensity_patches.values()],
-            int_prefix_list=intensity_patches.keys(),
-            structure_props=structure_props,
-            intensity_props=intensity_props,
-            pxl_sizes=(
-                label_image.pixel_size.z,
-                label_image.pixel_size.y,
-                label_image.pixel_size.x,
-            ),
-            optional_columns={
-                "plate": plate_name,
-                "well": well_name,
-                "ROI": roi.name,
-            },
+        # transform to resample label, in case of different resolutions
+        zoom_transform = ZoomTransform(
+            input_image=label,
+            target_image=image,
+            order="nearest",  # Nearest neighbor interpolation for labels
         )
-        measurements.append(measurement)
 
-    df_measurements = pd.concat(measurements, axis=0)
+        if ome_zarr.is_3d:
+            axes_order = ["y", "x", "z", "c"]
+        else:
+            axes_order = ["y", "x", "c"]
 
-    if append and (output_table_name in omezarr.list_tables()):
-        feat_table_org = omezarr.get_table(
-            output_table_name, check_type="feature_table"
+        iterator = FeatureExtractorIterator(
+            input_image=image,
+            input_label=label,
+            channel_selection=channels,
+            label_transforms=[zoom_transform],
+            axes_order=axes_order,
         )
-        df_org = feat_table_org.dataframe
-        # Ensure same index (labels) to avoid misalignment
-        if not df_org.index.equals(df_measurements.index):
-            raise ValueError(
-                "Index mismatch between existing feature table and new measurements."
+
+        if roi_table != "":
+            # If a ROI table is provided, we load it and use it to further restrict
+            # the iteration to the ROIs defined in the table
+            table = ome_zarr.get_generic_roi_table(name=roi_table)
+            logging.info(f"ROI table retrieved: {table=}")
+            iterator = iterator.product(table)
+            logging.info(f"Iterator updated with ROI table: {iterator=}")
+
+        measurements = []
+        for image_data, label_data, roi in iterator.iter_as_numpy():
+            logging.info(f"Processing ROI: {roi}")
+
+            # Squeeze singleton dimensions from label_data
+            label_data = np.squeeze(label_data)
+
+            # Convert image_data to list of per-channel arrays
+            # image_data shape is (y, x, num_channels) or (y, x, z, num_channels)
+            intensities_list = [image_data[..., i] for i in range(image_data.shape[-1])]
+
+            # Determine pixel sizes based on actual dimensionality
+            if label_data.ndim == 2:
+                pxl_sizes = (label.pixel_size.y, label.pixel_size.x)
+            else:  # 3D
+                pxl_sizes = (label.pixel_size.y, label.pixel_size.x, label.pixel_size.z)
+
+            roi_measurements = measure_features_ROI(
+                labels=label_data,
+                intensities_list=intensities_list,
+                int_prefix_list=channels,
+                structure_props=structure_props,
+                intensity_props=intensity_props,
+                pxl_sizes=pxl_sizes,
+                optional_columns={
+                    "plate": plate_name,
+                    "well": well_name,
+                    "ROI": roi.name,
+                },
             )
-        # Merge horizontally
-        df_measurements = pd.concat([df_org, df_measurements], axis=1)
-        # Remove duplicate columns, keeping the values from new df (rightmost)
-        df_measurements = df_measurements.loc[
-            :, ~df_measurements.columns.duplicated(keep="last")
-        ]
+            # Only append if there are measurements
+            if len(roi_measurements) > 0:
+                measurements.append(roi_measurements)
 
-    if append:
-        overwrite = True
+        df_measurements = pd.concat(measurements, axis=0)
 
-    feat_table = FeatureTable(df_measurements, reference_label=label_name)
-    omezarr.add_table(output_table_name, feat_table, overwrite=overwrite)
+        if append_to_table and (output_table_name in ome_zarr.list_tables()):
+            logging.info(f"Appending to existing table: {output_table_name}")
+            feat_table_org = ome_zarr.get_table(output_table_name)
+            df_org = feat_table_org.dataframe
+            # Ensure same index (labels) to avoid misalignment
+            if not df_org.index.equals(df_measurements.index):
+                raise ValueError(
+                    "Index mismatch between existing and new feature table."
+                    " Cannot append."
+                )
+            # Merge horizontally
+            df_measurements = pd.concat([df_org, df_measurements], axis=1)
+            # Remove duplicate columns, keeping the values from new df (rightmost)
+            df_measurements = df_measurements.loc[
+                :, ~df_measurements.columns.duplicated(keep="last")
+            ]
+
+        logging.info(f"Writing feature table: {output_table_name}")
+        feat_table = FeatureTable(df_measurements, reference_label=input_label_name)
+        ome_zarr.add_table(output_table_name, feat_table, overwrite=True)
 
 
 def measure_features_ROI(
-    labels,
-    intensities_list,
-    int_prefix_list=None,
-    structure_props=None,
-    intensity_props=None,
-    pxl_sizes=None,
+    labels: np.ndarray,
+    intensities_list: list[np.ndarray],
+    int_prefix_list: list[str] | None = None,
+    structure_props: list[str] | None = None,
+    intensity_props: list[str] | None = None,
+    pxl_sizes: tuple[float, ...] | None = None,
     optional_columns: dict[str, Any] | None = None,
 ):
     """Returns measurements of labels.
 
     Args:
-        labels: Label image to be measured
-        intensities_list: list of intensity images to measure
+        labels: Label image to be measured. (ndarray x,y,[z])
+        intensities_list: list of intensity images to measure (ndarray x,y,[z]).
         int_prefix_list: prefix to use for intensity measurements
             (default: c0, c1, c2, ...)
         structure_props: list of structure properties to measure
@@ -187,16 +217,34 @@ def measure_features_ROI(
     Returns:
         Pandas dataframe
     """
+    # Set default properties
+    if structure_props is None:
+        structure_props = ["num_pixels", "area"]
+    if int_prefix_list is None:
+        int_prefix_list = [f"c{i}" for i in range(len(intensities_list))]
+    if intensity_props is None:
+        intensity_props = ["intensity_mean", "intensity_std", "intensity_total"]
     if optional_columns is None:
         optional_columns = {}
 
+    # Check if labels are empty (all zeros)
+    unique_labels = np.unique(labels)[np.unique(labels) != 0]
+    is_empty = len(unique_labels) == 0
+
+    if is_empty:
+        # Create & return empty dataframe with all expected columns
+        columns = list(optional_columns.keys()) + structure_props
+        for int_prefix in int_prefix_list:
+            columns.extend([f"{int_prefix}_{prop}" for prop in intensity_props])
+        df = pd.DataFrame(columns=columns)
+        df.index.name = "label"
+        return df
+
     # initiate dataframe
-    df = pd.DataFrame(index=np.unique(labels)[np.unique(labels) != 0])
+    df = pd.DataFrame(index=unique_labels)
     df.index.name = "label"
 
     # do structure measurements
-    if structure_props is None:
-        structure_props = ["num_pixels", "area"]
     df_struct = pd.DataFrame(
         regionprops_table_plus(
             labels,
@@ -208,10 +256,6 @@ def measure_features_ROI(
     df_struct.set_index("label", inplace=True)
 
     # do intensity measurements
-    if int_prefix_list is None:
-        int_prefix_list = [f"c{i}" for i in range(len(intensities_list))]
-    if intensity_props is None:
-        intensity_props = ["intensity_mean", "intensity_std", "intensity_total"]
     df_int_list = []
     for intensities, int_prefix in zip(intensities_list, int_prefix_list, strict=True):
         df_int = pd.DataFrame(

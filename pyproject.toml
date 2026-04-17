@@ -28,12 +28,11 @@ authors = [
 requires-python = ">=3.11"
 dependencies = [
     "anndata",
-    "basicpy",
-    "hyperactive<5", # pin to avoid issues with hyperactive 5. TODO: remove pin when fixed
+    "basicpy>=2.0",
     "cellpose>=3.0.0,<4.0.0",
     "dask",
     "fractal-task-tools",
-    "ngio>=0.3.0,<0.4.0",
+    "ngio>=0.4.0,<0.5.0",
     "numpy",
     "pandas",
     "pydantic",
@@ -85,6 +84,7 @@ select = [
 ignore = [
     "D401", # First line should be in imperative mood (remove to opt in)
     "D415", # First line should end with a period (remove to opt in)
+    "UP045",
 ]
 
 [tool.ruff.lint.per-file-ignores]
