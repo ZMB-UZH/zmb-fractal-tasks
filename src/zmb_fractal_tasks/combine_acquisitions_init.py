@@ -51,7 +51,7 @@ def combine_acquisitions_init(
         ome_zarr_plate = open_ome_zarr_plate(plate_root)
         acquisition_ids = ome_zarr_plate.acquisition_ids
         new_acquisition_id = max(acquisition_ids) + 1
-        if acquisitions_to_combine is not None:
+        if acquisitions_to_combine:
             acquisition_ids = [
                 aid for aid in acquisition_ids if aid in acquisitions_to_combine
             ]
