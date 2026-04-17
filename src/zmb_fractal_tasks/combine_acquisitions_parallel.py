@@ -73,9 +73,7 @@ def combine_acquisitions_parallel(
         channel_wavelengths = channel_wavelengths[:, 1].tolist()
     else:
         # wavelength_ids are not unique, so we add acquisition suffix
-        channel_wavelengths = [
-            f"{wid}_acq{acq}" for acq, wid in channel_wavelengths
-        ]
+        channel_wavelengths = [f"{wid}_acq{acq}" for acq, wid in channel_wavelengths]
 
     # concatenate data along channel axis
     combined_image_data = da.concatenate(combined_image_data, axis=1)
@@ -83,10 +81,10 @@ def combine_acquisitions_parallel(
     # use first acquisition as reference for metadata
     ref_img = open_ome_zarr_container(init_args.zarr_urls_to_combine[0]).get_image()
     # set up chunks based on reference
-    chunks = {'t': 1, 'c': 1, 'z':1, 'y': 1, 'x': 1}
+    chunks = {"t": 1, "c": 1, "z": 1, "y": 1, "x": 1}
     for axis, size in zip(ref_img.axes, ref_img.chunks, strict=True):
         chunks[axis] = size
-    chunks = (chunks['t'], chunks['c'], chunks['z'], chunks['y'], chunks['x'])
+    chunks = (chunks["t"], chunks["c"], chunks["z"], chunks["y"], chunks["x"])
     # create new OME-Zarr
     new_omezarr = create_ome_zarr_from_array(
         zarr_url,
