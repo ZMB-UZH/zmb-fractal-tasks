@@ -466,6 +466,11 @@
                 "default": false,
                 "title": "Keep Individual Acquisitions",
                 "type": "boolean"
+              },
+              "remove_individual_acquisitions_from_imagelist": {
+                "default": false,
+                "title": "Remove Individual Acquisitions From Imagelist",
+                "type": "boolean"
               }
             },
             "required": [

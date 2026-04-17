@@ -19,10 +19,16 @@ class InitArgsCombineAcquisitionsParallel(BaseModel):
         keep_individual_acquisitions: If True, keep the individual acquisitions
             and add combined acquisition. If False, delete them and only keep
             the combined acquisition.
+        remove_individual_acquisitions_from_imagelist: If True, remove the
+            individual acquisitions from the image list. Only applicable if
+            keep_individual_acquisitions is True. (This is a workaround for the
+            moment, as we get filesystem errors when trying to delete the
+            individual acquisitions.)
     """
 
     zarr_urls_to_combine: list[str]
     keep_individual_acquisitions: bool = False
+    remove_individual_acquisitions_from_imagelist: bool = False
 
 
 @validate_call
@@ -113,7 +119,19 @@ def combine_acquisitions_parallel(
     ]
 
     if init_args.keep_individual_acquisitions:
-        return {"image_list_updates": image_list_updates}
+        if init_args.remove_individual_acquisitions_from_imagelist:
+            logging.info(
+                "Keeping individual acquisitions but removing them from the image list"
+            )
+            return {
+                "image_list_updates": image_list_updates,
+                "image_list_removals": init_args.zarr_urls_to_combine,
+            }
+        else:
+            logging.info(
+                "Keeping individual acquisitions and keeping them in the image list"
+            )
+            return {"image_list_updates": image_list_updates}
     else:
         for url in init_args.zarr_urls_to_combine:
             logging.info(f"Deleting individual acquisition at {url}")
