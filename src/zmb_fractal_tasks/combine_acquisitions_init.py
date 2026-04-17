@@ -15,6 +15,7 @@ def combine_acquisitions_init(
     zarr_dir: str,
     acquisitions_to_combine: Optional[list[int]] = None,
     keep_individual_acquisitions: bool = False,
+    remove_individual_acquisitions_from_imagelist: bool = False,
 ):
     """Combine multiple acquisitions of a plate into a single acquisition.
 
@@ -36,6 +37,11 @@ def combine_acquisitions_init(
         keep_individual_acquisitions: If True, keep the individual acquisitions
             and add combined acquisition. If False, delete them and only keep
             the combined acquisition.
+        remove_individual_acquisitions_from_imagelist: If True, remove the
+            individual acquisitions from the image list. Only applicable if
+            keep_individual_acquisitions is True. (This is a workaround for the
+            moment, as we get filesystem errors when trying to delete the
+            individual acquisitions.)
     """
     zarr_paths = [Path(url) for url in zarr_urls]
     # extract all plate roots
@@ -81,6 +87,7 @@ def combine_acquisitions_init(
                         (plate_root / p).as_posix() for p in acquisition_paths
                     ],
                     "keep_individual_acquisitions": keep_individual_acquisitions,
+                    "remove_individual_acquisitions_from_imagelist": remove_individual_acquisitions_from_imagelist,
                 }
                 parallelization_list.append(
                     {
@@ -88,7 +95,10 @@ def combine_acquisitions_init(
                         "init_args": init_args,
                     }
                 )
-            if not keep_individual_acquisitions:
+            if (
+                not keep_individual_acquisitions
+                or remove_individual_acquisitions_from_imagelist
+            ):
                 # remove individual acquisitions from plate metadata
                 for acquisition_path in acquisition_paths:
                     ome_zarr_plate.remove_image(
