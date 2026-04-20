@@ -42,6 +42,7 @@ def measure_features(
         "intensity_total",
     ],
     roi_table: str = "FOV_ROI_table",
+    pyramid_level: str | None = None,
     append_to_table: bool = True,
 ) -> None:
     """Measure shape and intensity features of labels and write to feature table.
@@ -65,11 +66,18 @@ def measure_features(
             for full list of possible properties.
         roi_table: ROI table name to iterate over (e.g 'FOV_ROI_table').
             If left empty, measure over whole image.
+        pyramid_level: Optional path to the pyramid level of the INTENSITY
+            image used for measurement. The label image will be resampled to
+            match it. If None, the highest resolution of the intensity image
+            will be used.
         append_to_table: If True, append new measurements to existing table.
             If False, overwrite existing table.
     """
     ome_zarr = open_ome_zarr_container(zarr_url)
-    image = ome_zarr.get_image()
+    if pyramid_level is None:
+        image = ome_zarr.get_image()
+    else:
+        image = ome_zarr.get_image(path=pyramid_level)
 
     if ome_zarr.is_time_series:
         raise NotImplementedError("Time series are not yet supported.")
@@ -103,7 +111,7 @@ def measure_features(
         logging.info(f"Processing label: {input_label_model.input_label_name}")
         input_label_name = input_label_model.input_label_name
         output_table_name = input_label_model.output_table_name
-        label = ome_zarr.get_label(input_label_name)
+        label = ome_zarr.get_label(input_label_name, pixel_size=image.pixel_size)
 
         # transform to resample label, in case of different resolutions
         zoom_transform = ZoomTransform(
@@ -146,9 +154,9 @@ def measure_features(
 
             # Determine pixel sizes based on actual dimensionality
             if label_data.ndim == 2:
-                pxl_sizes = (label.pixel_size.y, label.pixel_size.x)
+                pxl_sizes = (image.pixel_size.y, image.pixel_size.x)
             else:  # 3D
-                pxl_sizes = (label.pixel_size.y, label.pixel_size.x, label.pixel_size.z)
+                pxl_sizes = (image.pixel_size.y, image.pixel_size.x, image.pixel_size.z)
 
             roi_measurements = measure_features_ROI(
                 labels=label_data,
@@ -166,6 +174,13 @@ def measure_features(
             # Only append if there are measurements
             if len(roi_measurements) > 0:
                 measurements.append(roi_measurements)
+
+        if not measurements:
+            logging.warning(
+                f"No labels found for '{input_label_name}' in any ROI. "
+                f"Skipping feature table '{output_table_name}'."
+            )
+            continue
 
         df_measurements = pd.concat(measurements, axis=0)
 
