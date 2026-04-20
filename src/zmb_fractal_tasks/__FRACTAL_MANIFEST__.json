@@ -1158,28 +1158,21 @@
             "description": "Names of the target labels to measure distance to."
           },
           "pyramid_level": {
-            "default": "0",
             "title": "Pyramid Level",
             "type": "string",
-            "description": "Resolution level of the label image to use for calculations. Choose `0` for full resolution. Only tested for 2D images at level 0."
+            "description": "Optional path to the pyramid level of the input label. The target label image will be resampled to match it. If None, the highest resolution of the input label will be used."
           },
-          "roi_table_name": {
+          "roi_table": {
             "default": "FOV_ROI_table",
-            "title": "Roi Table Name",
+            "title": "Roi Table",
             "type": "string",
-            "description": "Name of the ROI table to iterate over."
+            "description": "ROI table name to iterate over (e.g 'FOV_ROI_table'). If left empty, measure over whole image."
           },
-          "append": {
+          "append_to_table": {
             "default": true,
-            "title": "Append",
+            "title": "Append To Table",
             "type": "boolean",
-            "description": "If True, append new measurements to existing table."
-          },
-          "overwrite": {
-            "default": false,
-            "title": "Overwrite",
-            "type": "boolean",
-            "description": "Only used if append is False. If True, overwrite existing table. If False, raise error if table already exists."
+            "description": "If True, append new measurements to existing table. If False, overwrite existing table."
           }
         },
         "required": [

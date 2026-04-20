@@ -13,9 +13,8 @@ def test_measure_shortest_distance(zarr_MIP_path):
         input_label_name="nuclei",
         target_label_names=["wf_2_labels", "wf_3_labels"],
         pyramid_level="0",
-        roi_table_name="FOV_ROI_table",
-        append=False,
-        overwrite=True,
+        roi_table="FOV_ROI_table",
+        append_to_table=False,
     )
     # TODO: Check outputs
 
