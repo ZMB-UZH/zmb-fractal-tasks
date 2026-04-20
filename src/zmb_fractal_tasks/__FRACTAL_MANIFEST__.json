@@ -947,6 +947,11 @@
             "type": "string",
             "description": "ROI table name to iterate over (e.g 'FOV_ROI_table'). If left empty, measure over whole image."
           },
+          "pyramid_level": {
+            "title": "Pyramid Level",
+            "type": "string",
+            "description": "Optional path to the pyramid level of the INTENSITY image used for measurement. The label image will be resampled to match it. If None, the highest resolution of the intensity image will be used."
+          },
           "append_to_table": {
             "default": true,
             "title": "Append To Table",
