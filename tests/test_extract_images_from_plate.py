@@ -1,5 +1,7 @@
 """Tests for extract_images_from_plate_init and _parallel tasks."""
 
+import json
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 from ngio import open_ome_zarr_container
@@ -118,3 +120,55 @@ def test_extract_images_from_plate_end_to_end(zarr_MIP_path, tmp_path):
     src = open_ome_zarr_container(str(zarr_MIP_path / "B" / "03" / "0"))
     assert dst.num_channels == src.num_channels
     assert dst.levels_paths == src.levels_paths
+
+
+def test_extract_images_from_plate_init_create_omexml(zarr_MIP_path, tmp_path):
+    """create_omexml=True writes METADATA.ome.xml with channel info."""
+    zarr_urls = [str(zarr_MIP_path / "B" / "03" / "0")]
+    zarr_dir = str(tmp_path / "output")
+
+    result = extract_images_from_plate_init(
+        zarr_urls=zarr_urls,
+        zarr_dir=zarr_dir,
+        acquisitions_to_extract=AcquisitionSelectionModel(
+            mode="folder_name", identifiers=["0"]
+        ),
+        create_omexml=True,
+    )
+
+    plist = result["parallelization_list"]
+    assert len(plist) == 1
+
+    # Determine the out_folder path from the first item's zarr_url
+    out_folder_path = Path(plist[0]["zarr_url"]).parent
+
+    # Root .zattrs should declare bioformats2raw layout
+    zattrs = json.loads((out_folder_path / ".zattrs").read_text())
+    assert zattrs.get("bioformats2raw.layout") == 3
+
+    # OME subdirectory and METADATA.ome.xml should exist
+    ome_dir = out_folder_path / "OME"
+    assert ome_dir.is_dir()
+    assert (ome_dir / ".zgroup").exists()
+    metadata_xml = ome_dir / "METADATA.ome.xml"
+    assert metadata_xml.exists()
+
+    # Parse OME-XML and check channel names and colors
+    ome_ns = "http://www.openmicroscopy.org/Schemas/OME/2016-06"
+    tree = ET.parse(metadata_xml)
+    root = tree.getroot()
+    images = root.findall(f"{{{ome_ns}}}Image")
+    assert len(images) == 1
+    assert images[0].get("Name") == "B03"
+
+    pixels = images[0].find(f"{{{ome_ns}}}Pixels")
+    assert pixels is not None
+    assert pixels.get("Type") == "uint16"
+    channels = pixels.findall(f"{{{ome_ns}}}Channel")
+    assert len(channels) == 3  # DAPI, nanog, Lamin B1
+    channel_names = [ch.get("Name") for ch in channels]
+    assert channel_names == ["DAPI", "nanog", "Lamin B1"]
+    # Colors should be valid integers
+    for ch in channels:
+        assert ch.get("Color") is not None
+        int(ch.get("Color"))  # should not raise
