@@ -25,7 +25,7 @@ authors = [
 ]
 
 # Required Python version and dependencies
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.14"
 dependencies = [
     "anndata",
     "basicpy>=2.0",
@@ -37,7 +37,7 @@ dependencies = [
     "pandas",
     "pydantic",
     "scikit-image",
-    "scipy",
+    "scipy>1.6.1",
     "smo",
     "zarr",
 ]
@@ -95,3 +95,23 @@ ignore = [
 docstring-code-format = true
 docstring-code-line-length = 89
 skip-magic-trailing-comma = false  # default is false
+
+[tool.pixi.workspace]
+channels = ["conda-forge"]
+platforms = ["win-64", "osx-arm64", "linux-64"]
+
+[tool.pixi.dependencies]
+python = "~=3.12.0"
+
+[tool.pixi.pypi-dependencies]
+zmb-fractal-tasks = { path = ".", editable = true }
+# For local development, you can use the following line instead of the one above
+# ome-zarr-converters-tools = { path = "../ome-zarr-converters-tools", editable = true }
+# ngio = { path = "../ngio", editable = true }
+
+[tool.pixi.environments]
+default = { solve-group = "default" }
+dev = { features = ["dev"], solve-group = "default" }
+
+# Required Python version and dependencies
+[tool.pixi.tasks]
