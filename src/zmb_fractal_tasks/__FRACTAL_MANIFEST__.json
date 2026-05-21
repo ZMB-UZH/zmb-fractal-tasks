@@ -1716,6 +1716,12 @@
             "title": "Extract Tables",
             "type": "boolean",
             "description": "Whether to extract tables. (Disable if the images will be used in QuPath.)"
+          },
+          "create_omexml": {
+            "default": true,
+            "title": "Create Omexml",
+            "type": "boolean",
+            "description": "Whether to create an OME-XML file with channel names and colors for all extracted images. This follows the bioformats2raw layout and allows e.g. QuPath to read channel metadata."
           }
         },
         "required": [
