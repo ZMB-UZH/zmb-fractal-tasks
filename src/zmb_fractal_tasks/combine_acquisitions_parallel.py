@@ -11,24 +11,19 @@ from pydantic import BaseModel, validate_call
 
 
 class InitArgsCombineAcquisitionsParallel(BaseModel):
-    """Init Args for combine_acquisitions_parallel task.
-
-    Args:
-        zarr_urls_to_combine: List of urls to the individual OME-Zarr images to
-            be combined.
-        keep_individual_acquisitions: If True, keep the individual acquisitions
-            and add combined acquisition. If False, delete them and only keep
-            the combined acquisition.
-        remove_individual_acquisitions_from_imagelist: If True, remove the
-            individual acquisitions from the image list. Only applicable if
-            keep_individual_acquisitions is True. (This is a workaround for the
-            moment, as we get filesystem errors when trying to delete the
-            individual acquisitions.)
-    """
+    """Init Args for combine_acquisitions_parallel task."""
 
     zarr_urls_to_combine: list[str]
+    """List of urls to the individual OME-Zarr images to be combined."""
     keep_individual_acquisitions: bool = False
+    """If True, keep the individual acquisitions and add combined
+    acquisition. If False, delete them and only keep the combined
+    acquisition."""
     remove_individual_acquisitions_from_imagelist: bool = False
+    """If True, remove the individual acquisitions from the image list.
+    Only applicable if keep_individual_acquisitions is True. (This is a
+    workaround for the moment, as we get filesystem errors when trying to
+    delete the individual acquisitions.)"""
 
 
 @validate_call

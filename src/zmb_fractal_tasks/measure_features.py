@@ -18,15 +18,12 @@ from zmb_fractal_tasks.utils.regionprops_table_plus import regionprops_table_plu
 
 
 class LabelInput(BaseModel):
-    """Input label configuration.
-
-    Args:
-        input_label_name (str): Name of the label to be used for measurement.
-        output_table_name (str): Name of corresponding output feature table.
-    """
+    """Input label configuration."""
 
     input_label_name: str
+    """Name of the label to be used for measurement."""
     output_table_name: str
+    """Name of corresponding output feature table."""
 
 
 @validate_call
