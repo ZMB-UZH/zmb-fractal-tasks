@@ -5082,14 +5082,14 @@ packages:
   requires_python: '>=3.8'
 - pypi: ./
   name: zmb-fractal-tasks
-  version: 0.4.3.dev0+g57e594aab.d20260521
-  sha256: 67de050e28cdaeb36e3fca3fc65b7ac8deca02f00304e81ae97618082e8846a9
+  version: 0.4.3.dev1+g35eaac557.d20260521
+  sha256: 96890b142193a0f86981459e46004c8158332a36028a0b7be655718449b2b9f7
   requires_dist:
   - anndata
   - basicpy>=2.0
   - cellpose>=3.0.0,<4.0.0
   - dask
-  - fractal-task-tools
+  - fractal-task-tools>=0.5.0
   - ngio>=0.4.0,<0.5.0
   - numpy
   - pandas
