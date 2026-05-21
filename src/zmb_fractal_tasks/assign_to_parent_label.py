@@ -17,57 +17,46 @@ from zmb_fractal_tasks.utils.regionprops_table_plus import regionprops_table_plu
 
 
 class ParentLabelInput(BaseModel):
-    """Parent label configuration.
-
-    Args:
-        parent_label_name (str): Name of the parent label.
-        output_parent_table_name (str): Name of corresponding output parent
-            feature table. (Only needed if aggregate_features is True).
-    """
+    """Parent label configuration."""
 
     parent_label_name: str
+    """Name of the parent label."""
     output_parent_table_name: Optional[str] = None
+    """Name of corresponding output parent feature table. (Only needed if
+    aggregate_features is True)."""
 
 
 class AggregationOptions(BaseModel):
-    """Options for feature aggregation.
-
-    Args:
-        aggregate_features (bool): Whether to aggregate features in seed-table
-            to parent-table.
-        features_to_aggregate (Sequence[str] | None): List of feature names
-            (columns in seed-table) to aggregate to parent-table.
-            If left empty, all features from seed table are aggregated.
-        aggregation_methods (Sequence[str] | None): List of aggregation methods
-            to use for each feature. Typical methods are 'sum', 'mean', 'std',
-            'sem', 'min', 'max' (any built-in pandas function). A count of
-            seeds per parent label is always added automatically.
-        append_to_parent_table (bool): If True, aggregated features to existing
-            table(s). If False, overwrite existing table or create new one.
-    """
+    """Options for feature aggregation."""
 
     aggregate_features: bool = True
+    """Whether to aggregate features in seed-table to parent-table."""
     features_to_aggregate: Optional[Sequence[str]] = None
+    """List of feature names (columns in seed-table) to aggregate to
+    parent-table. If left empty, all features from seed table are
+    aggregated."""
     aggregation_methods: Sequence[str] = ["mean", "std"]
+    """List of aggregation methods to use for each feature. Typical methods
+    are 'sum', 'mean', 'std', 'sem', 'min', 'max' (any built-in pandas
+    function). A count of seeds per parent label is always added
+    automatically."""
     append_to_parent_table: bool = True
+    """If True, aggregated features to existing table(s). If False,
+    overwrite existing table or create new one."""
 
 
 class AdditionalOptions(BaseModel):
-    """Additional options.
-
-    Args:
-        pyramid_level (str): Resolution level of the label image to use for
-            calculations. Choose `0` for full resolution.
-        roi_table (str): ROI table name to iterate over (e.g 'FOV_ROI_table').
-            If left empty, measure over whole image.
-        append_to_seed_table (bool): If True, append new measurements to
-            existing seed table. If False, overwrite existing table or create
-            new one.
-    """
+    """Additional options."""
 
     pyramid_level: str = "0"
+    """Resolution level of the label image to use for calculations.
+    Choose `0` for full resolution."""
     roi_table: str = "FOV_ROI_table"
+    """ROI table name to iterate over (e.g 'FOV_ROI_table').
+    If left empty, measure over whole image."""
     append_to_seed_table: bool = True
+    """If True, append new measurements to existing seed table. If False,
+    overwrite existing table or create new one."""
 
 
 @validate_call

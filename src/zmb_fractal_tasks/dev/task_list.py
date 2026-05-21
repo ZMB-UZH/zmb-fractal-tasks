@@ -8,58 +8,6 @@ from fractal_task_tools.task_models import (
 
 AUTHORS = "Flurin Sturzenegger"
 DOCS_LINK = None
-INPUT_MODELS = [
-    (
-        "zmb_fractal_tasks",
-        "basic_correct_illumination_plate_init.py",
-        "OutputOptions",
-    ),
-    (
-        "zmb_fractal_tasks",
-        "basic_correct_illumination_plate_init.py",
-        "CoreBaSiCParameters",
-    ),
-    (
-        "zmb_fractal_tasks",
-        "basic_correct_illumination_plate_init.py",
-        "AdvancedBaSiCParameters",
-    ),
-    (
-        "zmb_fractal_tasks",
-        "utils/normalization.py",
-        "NormalizedChannelInputModel",
-    ),
-    (
-        "zmb_fractal_tasks",
-        "utils/normalization.py",
-        "CustomNormalizer",
-    ),
-    (
-        "zmb_fractal_tasks",
-        "measure_features.py",
-        "LabelInput",
-    ),
-    (
-        "zmb_fractal_tasks",
-        "assign_to_parent_label.py",
-        "ParentLabelInput",
-    ),
-    (
-        "zmb_fractal_tasks",
-        "assign_to_parent_label.py",
-        "AggregationOptions",
-    ),
-    (
-        "zmb_fractal_tasks",
-        "assign_to_parent_label.py",
-        "AdditionalOptions",
-    ),
-    (
-        "zmb_fractal_tasks",
-        "utils/channel_utils.py",
-        "MeasurementChannels",
-    ),
-]
 
 TASK_LIST = [
     CompoundTask(
