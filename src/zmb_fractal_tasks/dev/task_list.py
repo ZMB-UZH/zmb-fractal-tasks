@@ -146,13 +146,6 @@ TASK_LIST = [
         tags=["Measure"],
     ),
     ParallelTask(
-        name="Cellpose segmentation, simple",
-        executable="segment_cellpose_simple.py",
-        meta={"cpus_per_task": 1, "mem": 4000},
-        category="Segmentation",
-        tags=["Cellpose", "Segmentation"],
-    ),
-    ParallelTask(
         name="Segment particles",
         executable="segment_particles.py",
         meta={"cpus_per_task": 1, "mem": 4000},
