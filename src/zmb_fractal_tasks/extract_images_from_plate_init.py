@@ -1,5 +1,6 @@
 """Fractal init task to extract images from a plate."""
 
+import json
 import logging
 from pathlib import Path
 from typing import Literal
@@ -66,6 +67,32 @@ def _get_plate_images_by_folder_name(ome_zarr_plate, folder_name):
         if image_path.split("/")[-1] == folder_name:
             images_paths.append(image_path)
     return images_paths
+
+
+def _detect_zarr_format(plate_root: Path) -> int:
+    """Detect zarr format version (2 or 3) from the plate root directory."""
+    if (plate_root / ".zgroup").exists():
+        return 2
+    if (plate_root / "zarr.json").exists():
+        return 3
+    raise ValueError(f"Cannot detect zarr format version at {plate_root}")
+
+
+def _write_zarr_group_metadata(folder_path: Path, zarr_format: int) -> None:
+    """Write minimal zarr group metadata files for the given format version."""
+    if zarr_format == 2:
+        (folder_path / ".zattrs").write_text("{}\n")
+        (folder_path / ".zgroup").write_text(
+            json.dumps({"zarr_format": 2}, indent=2) + "\n"
+        )
+    elif zarr_format == 3:
+        (folder_path / "zarr.json").write_text(
+            json.dumps(
+                {"zarr_format": 3, "node_type": "group", "attributes": {}},
+                indent=2,
+            )
+            + "\n"
+        )
 
 
 def _iter_acquisitions(ome_zarr_plate, selection: AcquisitionSelectionModel):
@@ -136,14 +163,19 @@ def extract_images_from_plate_init(
     for plate_root in plate_roots:
         ome_zarr_plate = open_ome_zarr_plate(plate_root)
         plate_name = plate_root.stem  # e.g. "MyPlate" from "MyPlate.zarr"
+        zarr_format = _detect_zarr_format(plate_root)
         for identifier, image_paths in _iter_acquisitions(
             ome_zarr_plate, acquisitions_to_extract
         ):
             out_folder = f"{plate_name}_{identifier}.zarr"
+            out_folder_path = Path(zarr_dir) / out_folder
+            out_folder_path.mkdir(parents=True, exist_ok=True)
+            _write_zarr_group_metadata(out_folder_path, zarr_format)
             for image_path in image_paths:
-                # image_path is e.g. "B/03/0"; well is "B/03"
-                well_path = "/".join(image_path.split("/")[:2])
-                zarr_url_out = Path(zarr_dir) / out_folder / well_path
+                # image_path is e.g. "B/03/0"; well folder is "B03"
+                parts = image_path.split("/")
+                well_folder = parts[0] + parts[1]
+                zarr_url_out = Path(zarr_dir) / out_folder / well_folder
                 parallelization_list.append(
                     {
                         "zarr_url": zarr_url_out.as_posix(),

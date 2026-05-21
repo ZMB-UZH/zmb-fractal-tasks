@@ -37,7 +37,7 @@ def test_extract_images_from_plate_init_folder_name(zarr_MIP_path, tmp_path):
 
     # Output path should be zarr_dir/{plate_stem}_0.zarr/B/03
     expected_zarr_url = (
-        Path(zarr_dir) / f"{zarr_MIP_path.stem}_0.zarr" / "B" / "03"
+        Path(zarr_dir) / f"{zarr_MIP_path.stem}_0.zarr" / "B03"
     ).as_posix()
     assert item["zarr_url"] == expected_zarr_url
 
