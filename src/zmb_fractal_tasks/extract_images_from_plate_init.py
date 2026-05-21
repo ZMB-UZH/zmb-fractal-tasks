@@ -279,7 +279,9 @@ def extract_images_from_plate_init(
             out_folder_path = Path(zarr_dir) / out_folder
             out_folder_path.mkdir(parents=True, exist_ok=True)
             out_folder_attrs = {"bioformats2raw.layout": 3} if create_omexml else None
-            _write_zarr_group_metadata(out_folder_path, zarr_format, attrs=out_folder_attrs)
+            _write_zarr_group_metadata(
+                out_folder_path, zarr_format, attrs=out_folder_attrs
+            )
             images_info = []
             for image_path in image_paths:
                 # image_path is e.g. "B/03/0"; well folder is "B03"
@@ -305,7 +307,9 @@ def extract_images_from_plate_init(
                 ome_dir = out_folder_path / "OME"
                 ome_dir.mkdir(exist_ok=True)
                 _write_zarr_group_metadata(ome_dir, zarr_format)
-                (ome_dir / "METADATA.ome.xml").write_text(_generate_ome_xml(images_info))
+                (ome_dir / "METADATA.ome.xml").write_text(
+                    _generate_ome_xml(images_info)
+                )
                 logging.info(
                     f"Written OME-XML at {ome_dir / 'METADATA.ome.xml'} "
                     f"with {len(images_info)} image(s)."
