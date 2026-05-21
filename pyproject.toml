@@ -47,6 +47,7 @@ dependencies = [
 dev = [
     "devtools",
     "hatch",
+    "hatch-vcs",
     "ipykernel",
     "jsonschema",
     "pre-commit",
