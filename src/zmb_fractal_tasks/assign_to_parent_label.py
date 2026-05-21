@@ -170,8 +170,8 @@ def assign_to_parent_label(
         if non_empty_measurements:
             df_measurements_list.append(pd.concat(non_empty_measurements, axis=0))
         else:
-            # If all measurements are empty, create an empty dataframe with expected columns
-            # Use the first measurement as template for columns
+            # If all measurements are empty, create an empty dataframe with expected
+            # columns. Use the first measurement as template for columns
             df_measurements_list.append(measurements[0])
 
     # merge all parent measurements
