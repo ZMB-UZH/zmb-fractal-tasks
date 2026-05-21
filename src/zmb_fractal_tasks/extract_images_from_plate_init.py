@@ -92,6 +92,35 @@ def _hex_color_to_ome_int(hex_color: str) -> int:
     return rgba
 
 
+def _collect_image_info_for_omexml(well_folder: str, zarr_url_source: str) -> dict:
+    """Read image metadata from a source OME-Zarr for OME-XML generation."""
+    src_container = open_ome_zarr_container(zarr_url_source)
+    src_img = src_container.get_image()
+    sh = src_img.shape
+    ps = src_img.pixel_size
+    return {
+        "name": well_folder,
+        "size_c": sh[0],
+        "size_z": sh[-3] if len(sh) >= 4 else 1,
+        "size_y": sh[-2],
+        "size_x": sh[-1],
+        "pixel_type": _NUMPY_TO_OME_TYPE.get(str(src_img.dtype), str(src_img.dtype)),
+        "physical_size_x": ps.x,
+        "physical_size_y": ps.y,
+        "channels": [
+            {
+                "name": ch.label,
+                "color_int": _hex_color_to_ome_int(
+                    ch.channel_visualisation.color
+                    if ch.channel_visualisation is not None
+                    else "FFFFFF"
+                ),
+            }
+            for ch in src_img.channels_meta.channels
+        ],
+    }
+
+
 def _generate_ome_xml(images_info: list[dict]) -> str:
     """Generate OME-XML with channel metadata for all images.
 
@@ -211,7 +240,7 @@ def extract_images_from_plate_init(
     acquisitions_to_extract: AcquisitionSelectionModel,
     extract_label_images: bool = False,
     extract_tables: bool = False,
-    create_omexml: bool = False,
+    create_omexml: bool = True,
 ):
     """Extract images from a plate.
 
@@ -231,11 +260,9 @@ def extract_images_from_plate_init(
             images will be used in QuPath.)
         extract_tables: Whether to extract tables. (Disable if the images will
             be used in QuPath.)
-        create_omexml: Whether to create an OME-XML file at
-            ``<out_folder>/OME/METADATA.ome.xml`` with channel names and
+        create_omexml: Whether to create an OME-XML file with channel names and
             colors for all extracted images. This follows the bioformats2raw
-            layout (``bioformats2raw.layout: 3`` in ``.zattrs``) and allows
-            QuPath to read channel metadata from the zarr store.
+            layout and allows e.g. QuPath to read channel metadata.
     """
     zarr_paths = [Path(url) for url in zarr_urls]
     # OME-Zarr HCS hierarchy: plate/{row}/{col}/{image} → 3 levels up to plate root
@@ -261,34 +288,8 @@ def extract_images_from_plate_init(
                 zarr_url_source = (plate_root / image_path).as_posix()
                 zarr_url_out = Path(zarr_dir) / out_folder / well_folder
                 if create_omexml:
-                    src_container = open_ome_zarr_container(zarr_url_source)
-                    src_img = src_container.get_image()
-                    sh = src_img.shape
-                    ps = src_img.pixel_size
                     images_info.append(
-                        {
-                            "name": well_folder,
-                            "size_c": sh[0],
-                            "size_z": sh[-3] if len(sh) >= 4 else 1,
-                            "size_y": sh[-2],
-                            "size_x": sh[-1],
-                            "pixel_type": _NUMPY_TO_OME_TYPE.get(
-                                str(src_img.dtype), str(src_img.dtype)
-                            ),
-                            "physical_size_x": ps.x,
-                            "physical_size_y": ps.y,
-                            "channels": [
-                                {
-                                    "name": ch.label,
-                                    "color_int": _hex_color_to_ome_int(
-                                        ch.channel_visualisation.color
-                                        if ch.channel_visualisation is not None
-                                        else "FFFFFF"
-                                    ),
-                                }
-                                for ch in src_img.channels_meta.channels
-                            ],
-                        }
+                        _collect_image_info_for_omexml(well_folder, zarr_url_source)
                     )
                 parallelization_list.append(
                     {
