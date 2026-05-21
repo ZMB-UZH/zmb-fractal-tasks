@@ -9,18 +9,15 @@ from pydantic import BaseModel, Field, field_validator, model_validator, validat
 
 
 class AcquisitionSelectionModel(BaseModel):
-    """Select acquisitions by acquisition ID, acquisition name, or folder name.
-
-    Args:
-        mode: acquisition_id, acquisition_name, or folder_name.
-        identifiers: Identifiers of the acquisitions to select (according to
-            the selected mode). If empty, all acquisitions will be selected.
-    """
+    """Select acquisitions by acquisition ID, acquisition name, or folder name."""
 
     mode: Literal["acquisition_id", "acquisition_name", "folder_name"] = (
         "acquisition_id"
     )
+    """Mode in which identifiers are interpreted."""
     identifiers: list[str] = Field(default_factory=list)
+    """Identifiers of the acquisitions to select (according to the selected
+    mode). If empty, all acquisitions will be selected."""
 
     @field_validator("identifiers", mode="after")
     @classmethod
@@ -109,9 +106,7 @@ def extract_images_from_plate_init(
     *,
     zarr_urls: list[str],
     zarr_dir: str,
-    acquisitions_to_extract: AcquisitionSelectionModel = AcquisitionSelectionModel(
-        mode="acquisition_id", identifiers=[]
-    ),
+    acquisitions_to_extract: AcquisitionSelectionModel,
     extract_label_images: bool = False,
     extract_tables: bool = False,
 ):
