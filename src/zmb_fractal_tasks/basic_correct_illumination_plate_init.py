@@ -15,92 +15,77 @@ from pydantic import BaseModel, Field, validate_call
 
 
 class OutputOptions(BaseModel):
-    """Options for output
-
-    Args:
-        overwrite_illumination_profiles: If True, overwrite existing
-            illumination profiles of the same name. If False, an error is
-            raised if illumination profiles already exist.
-        overwrite_input_image: If True, overwrite the input image. If False,
-            create a new well sub-group to store the corrected image.
-        new_well_subgroup_suffix: Suffix to add to original well sub-group
-            name. Only used if overwrite_input_image is False.
-        subtract_median_baseline: If True, do a background subtraction by
-            subtracting the median of all baseline values from the corrected
-            image.
-    """
+    """Options for output."""
 
     overwrite_illumination_profiles: bool = True
+    """If True, overwrite existing illumination profiles of the same name.
+    If False, an error is raised if illumination profiles already exist."""
     overwrite_input_image: bool = True
+    """If True, overwrite the input image. If False, create a new well
+    sub-group to store the corrected image."""
     new_well_subgroup_suffix: str = "illumination_corrected"
+    """Suffix to add to original well sub-group name. Only used if
+    overwrite_input_image is False."""
     subtract_median_baseline: bool = False
+    """If True, do a background subtraction by subtracting the median of
+    all baseline values from the corrected image."""
 
 
 class CoreBaSiCParameters(BaseModel):
-    """Core Parameters for BaSiC calculation
-
-    Args:
-        n_images_sampled: Number of images to sample for illumination
-            correction. If there are less images available than n_images, all
-            available images will be used.
-        get_darkfield: If True, calculate darkfield correction in addition to
-            flatfield correction.
-        smoothness_flatfield: Smoothing parameter for flatfield.
-            (Weight of the flatfield term in the Lagrangian.)
-        smoothness_darkfield: Smoothing parameter for darkfield.
-            (Weight of the darkfield term in the Lagrangian.)
-        random_seed: Integer random seed to initialize random number generator.
-            If left empty, it will result in non-reproducible outputs.
-    """
+    """Core Parameters for BaSiC calculation."""
 
     n_images_sampled: int = 256
+    """Number of images to sample for illumination correction. If there
+    are less images available than n_images, all available images will be
+    used."""
     get_darkfield: bool = False
+    """If True, calculate darkfield correction in addition to flatfield
+    correction."""
     smoothness_flatfield: float = 1.0
+    """Smoothing parameter for flatfield.
+    (Weight of the flatfield term in the Lagrangian.)"""
     smoothness_darkfield: float = 1.0
+    """Smoothing parameter for darkfield.
+    (Weight of the darkfield term in the Lagrangian.)"""
     random_seed: Optional[int] = None
+    """Integer random seed to initialize random number generator. If left
+    empty, it will result in non-reproducible outputs."""
 
 
 class AdvancedBaSiCParameters(BaseModel):
-    """Advanced Parameters for BaSiC
-
-    Args:
-        epsilon: Weight regularization term.
-        fitting_mode: Fitting mode for optimization.
-            Must be either "approximate" or "ladmap".
-        max_iterations: Maximum number of iterations for single optimization.
-        max_mu_coef: Maximum allowed value of mu, divided by the initial value.
-        max_reweight_iterations: Maximum number of reweighting iterations.
-        max_reweight_iterations_baseline: Maximum number of reweighting
-            iterations for baseline.
-        mu_coef: Coefficient for initial mu value.
-        optimization_tol: Optimization tolerance.
-        optimization_tol_diff: Optimization tolerance for update diff.
-        reweighting_tol: Reweighting tolerance in mean absolute difference of
-            images.
-        resize_params: Parameters for the resize function when downsampling
-            images.
-        rho: Parameter rho for mu update.
-        sort_intensity: Whether or not to sort the intensities of the image.
-        sparse_cost_darkfield: Weight of the darkfield sparse term in the
-            Lagrangian.
-        working_size: Size for running computations. None means no rescaling.
-    """
+    """Advanced Parameters for BaSiC."""
 
     epsilon: float = 0.1
+    """Weight regularization term."""
     fitting_mode: Literal["approximate", "ladmap"] = "approximate"
+    """Fitting mode for optimization.
+    Must be either "approximate" or "ladmap"."""
     max_iterations: int = 500
+    """Maximum number of iterations for single optimization."""
     max_mu_coef: float = 10000000.0
+    """Maximum allowed value of mu, divided by the initial value."""
     max_reweight_iterations: int = 10
+    """Maximum number of reweighting iterations."""
     max_reweight_iterations_baseline: int = 5
+    """Maximum number of reweighting iterations for baseline."""
     mu_coef: float = 12.5
+    """Coefficient for initial mu value."""
     optimization_tol: float = 0.001
+    """Optimization tolerance."""
     optimization_tol_diff: float = 0.01
+    """Optimization tolerance for update diff."""
     reweighting_tol: float = 0.01
+    """Reweighting tolerance in mean absolute difference of images."""
     resize_params: dict[str, Any] = Field(default_factory=dict)
+    """Parameters for the resize function when downsampling images."""
     rho: float = 1.5
+    """Parameter rho for mu update."""
     sort_intensity: bool = False
+    """Whether or not to sort the intensities of the image."""
     sparse_cost_darkfield: float = 0.01
+    """Weight of the darkfield sparse term in the Lagrangian."""
     working_size: int = 128
+    """Size for running computations. None means no rescaling."""
 
 
 @validate_call

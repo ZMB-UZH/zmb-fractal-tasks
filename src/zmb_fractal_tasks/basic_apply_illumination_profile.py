@@ -10,23 +10,20 @@ from pydantic import BaseModel, validate_call
 
 
 class InitArgsBaSiCApply(BaseModel):
-    """Init Args for basic_apply_illumination_profile task.
+    """Init Args for basic_apply_illumination_profile task."""
 
-    Args:
-        illumination_profiles_folder: Path of folder of illumination profiles.
-            If left empty, looks for illumination profiles in
-            zarr_dir/basic_illumination_profiles.
-        subtract_median_baseline: If True, subtract the median of all baseline
-            values from the corrected image.
-        overwrite_input_image: If True, overwrite the input image. If False,
-            create a new well sub-group to store the corrected image.
-        new_well_subgroup_suffix: Suffix to add to the new well sub-group
-            name. Only used if overwrite_input_image is False.
-    """
     illumination_profiles_folder: str
+    """Path of folder of illumination profiles. If left empty, looks for
+    illumination profiles in zarr_dir/basic_illumination_profiles."""
     subtract_median_baseline: bool = False
+    """If True, subtract the median of all baseline values from the
+    corrected image."""
     overwrite_input_image: bool = True
+    """If True, overwrite the input image. If False, create a new well
+    sub-group to store the corrected image."""
     new_well_subgroup_suffix: str = "illumination_corrected"
+    """Suffix to add to the new well sub-group name. Only used if
+    overwrite_input_image is False."""
 
 @validate_call
 def basic_apply_illumination_profile(
