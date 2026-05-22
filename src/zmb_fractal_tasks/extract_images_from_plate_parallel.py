@@ -5,6 +5,7 @@ from typing import Any
 
 import dask.array as da
 from ngio import open_ome_zarr_container
+from ngio.ome_zarr_meta import Channel
 from pydantic import BaseModel, validate_call
 
 
@@ -37,8 +38,13 @@ def extract_images_from_plate_parallel(
     """
     logging.info(f"Extracting image from {init_args.zarr_url_source} to {zarr_url}.")
     source_omezarr = open_ome_zarr_container(init_args.zarr_url_source)
+
+    # channels_meta is only needed as workaround to avoid issues, where
+    # multiple wavelength_ids are not supported in ngio
+    # TODO: remove this workaround once ngio supports multiple wavelength_ids
     new_omezarr = source_omezarr.derive_image(
         zarr_url,
+        channels_meta=source_omezarr.images_container.channels_meta.channels, # TODO
         copy_labels=init_args.extract_label_images,
         copy_tables=init_args.extract_tables,
         overwrite=True,
