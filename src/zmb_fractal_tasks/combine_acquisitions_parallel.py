@@ -7,6 +7,7 @@ from typing import Any
 import dask.array as da
 import numpy as np
 from ngio import create_ome_zarr_from_array, open_ome_zarr_container
+from ngio.ome_zarr_meta.ngio_specs._channels import Channel, ChannelVisualisation
 from pydantic import BaseModel, validate_call
 
 
@@ -70,6 +71,17 @@ def combine_acquisitions_parallel(
         # wavelength_ids are not unique, so we add acquisition suffix
         channel_wavelengths = [f"{wid}_acq{acq}" for acq, wid in channel_wavelengths]
 
+    channels_meta = [
+        Channel(
+            label=lbl,
+            wavelength_id=wid,
+            channel_visualisation=ChannelVisualisation(color=col),
+        )
+        for lbl, wid, col in zip(
+            channel_labels, channel_wavelengths, channel_colors, strict=True
+        )
+    ]
+
     # concatenate data along channel axis
     combined_image_data = da.concatenate(combined_image_data, axis=1)
 
@@ -84,15 +96,13 @@ def combine_acquisitions_parallel(
     new_omezarr = create_ome_zarr_from_array(
         zarr_url,
         combined_image_data,
-        xy_pixelsize=ref_img.pixel_size.x,
+        pixelsize=ref_img.pixel_size.x,
         z_spacing=ref_img.pixel_size.z,
         time_spacing=ref_img.pixel_size.t,
         space_unit=ref_img.pixel_size.space_unit,
         time_unit=ref_img.pixel_size.time_unit,
         axes_names=["t", "c", "z", "y", "x"],
-        channel_labels=channel_labels,
-        channel_wavelengths=channel_wavelengths,
-        channel_colors=channel_colors,
+        channels_meta=channels_meta,
         chunks=chunks,
     )
 

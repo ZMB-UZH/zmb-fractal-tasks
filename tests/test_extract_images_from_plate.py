@@ -92,7 +92,7 @@ def test_extract_images_from_plate_parallel_basic(zarr_MIP_path, tmp_path):
     src = open_ome_zarr_container(str(source_path))
     dst = open_ome_zarr_container(str(output_path))
     assert dst.num_channels == src.num_channels
-    assert dst.levels_paths == src.levels_paths
+    assert dst.level_paths == src.level_paths
 
 
 def test_extract_images_from_plate_end_to_end(zarr_MIP_path, tmp_path):
@@ -119,7 +119,7 @@ def test_extract_images_from_plate_end_to_end(zarr_MIP_path, tmp_path):
     dst = open_ome_zarr_container(str(output_path))
     src = open_ome_zarr_container(str(zarr_MIP_path / "B" / "03" / "0"))
     assert dst.num_channels == src.num_channels
-    assert dst.levels_paths == src.levels_paths
+    assert dst.level_paths == src.level_paths
 
 
 def test_extract_images_from_plate_init_create_omexml(zarr_MIP_path, tmp_path):

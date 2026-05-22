@@ -191,7 +191,7 @@ def spot_mask_2D(
     if gaussian_smoothing_sigma:
         x = gaussian(x, sigma=gaussian_smoothing_sigma, preserve_range=True)
     mask = gaussian_laplace_threshold(x, s2_param)
-    mask = remove_small_holes(mask, fill_max_size)
+    mask = remove_small_holes(mask, max_size=fill_max_size)
     return mask
 
 

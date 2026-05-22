@@ -45,7 +45,7 @@ def extract_images_from_plate_parallel(
         overwrite=True,
     )
 
-    for level_path in source_omezarr.levels_paths:
+    for level_path in source_omezarr.level_paths:
         src_img = source_omezarr.get_image(path=level_path)
         dst_img = new_omezarr.get_image(path=level_path)
         logging.info(f"Copying level {level_path} (shape {src_img.shape}).")
