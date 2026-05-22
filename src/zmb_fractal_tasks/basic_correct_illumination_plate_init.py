@@ -141,31 +141,37 @@ def basic_correct_illumination_plate_init(
     for omezarr in omezarrs:
         roi_table = omezarr.get_table("FOV_ROI_table")
         for roi in roi_table.rois():
-            roi_dims.append((roi.z_length, roi.y_length, roi.x_length))
+            roi_dims.append((roi["z"].length, roi["y"].length, roi["x"].length))
 
     if not all(dim == roi_dims[0] for dim in roi_dims):
         raise ValueError("FOVs have differing dimensions")
 
     # get list of all channels
-    wavelength_ids = [ngio_image.wavelength_ids for ngio_image in ngio_images]
-    wavelength_ids = {wlid for sublist in wavelength_ids for wlid in sublist}
-    logging.info(f"Processing {len(wavelength_ids)} channels: {wavelength_ids}")
+    all_wavelength_ids = [ngio_image.wavelength_ids for ngio_image in ngio_images]
+    all_wavelength_ids = {wlid for sublist in all_wavelength_ids for wlid in sublist}
+    logging.info(f"Processing {len(all_wavelength_ids)} channels: {all_wavelength_ids}")
 
     # process each channel
     basic_dict = {}
-    for i, channel in enumerate(wavelength_ids):
-        logging.info(f"Processing channel {i}/{len(wavelength_ids)}: {channel}")
+    for i, wl_id in enumerate(all_wavelength_ids):
+        logging.info(f"Processing channel {i}/{len(all_wavelength_ids)}: {wl_id}")
         fov_data_all = []
         for omezarr in omezarrs:
             ngio_image = omezarr.get_image()
-            if channel in ngio_image.wavelength_ids:
-                channel_idx = ngio_image.wavelength_ids.index(channel)
+            if wl_id in ngio_image.wavelength_ids:
+                channel_indices = [
+                    i for i, wl in enumerate(ngio_image.wavelength_ids) if wl == wl_id
+                ]
                 roi_table = omezarr.get_table("FOV_ROI_table")
                 for roi in roi_table.rois():
-                    roi_data = ngio_image.get_roi(
-                        roi, axes_order=["c", "z", "y", "x"], c=channel_idx, mode="dask"
-                    )
-                    fov_data_all.append(roi_data)
+                    for channel_idx in channel_indices:
+                        roi_data = ngio_image.get_roi(
+                            roi,
+                            axes_order=["c", "z", "y", "x"],
+                            c=channel_idx,
+                            mode="dask",
+                        )
+                        fov_data_all.append(roi_data)
         if len(fov_data_all) >= core_basic_parameters.n_images_sampled:
             logging.info(
                 f"Using {core_basic_parameters.n_images_sampled} random images out of"
@@ -219,7 +225,7 @@ def basic_correct_illumination_plate_init(
 
         # save illumination correction profile
         logging.info("Saving illumination correction profile...")
-        folder_path = Path(illumination_profiles_folder) / f"{channel}"
+        folder_path = Path(illumination_profiles_folder) / f"{wl_id}"
         if output_options.overwrite_illumination_profiles:
             if os.path.isdir(folder_path):
                 shutil.rmtree(folder_path)
@@ -228,7 +234,7 @@ def basic_correct_illumination_plate_init(
         np.save(folder_path / "flatfield.npy", basic.flatfield)
         np.save(folder_path / "darkfield.npy", basic.darkfield)
         np.save(folder_path / "baseline.npy", basic.baseline)
-        basic_dict[channel] = basic
+        basic_dict[wl_id] = basic
 
     logging.info("Finished processing all channels.")
 

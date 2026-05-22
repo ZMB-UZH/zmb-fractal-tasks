@@ -31,7 +31,7 @@ dependencies = [
     "basicpy>=2.0",
     "dask",
     "fractal-task-tools>=0.5.0",
-    "ngio>=0.4.0,<0.5.0",
+    "ngio>=0.5.10,<0.6.0",
     "numpy",
     "pandas",
     "pydantic",
