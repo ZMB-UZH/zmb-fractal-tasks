@@ -87,13 +87,13 @@ def histogram_calculate(
             )
 
         # write omero metadata
-        with zarr.open(zarr_url, mode="a") as zarr_file:
-            omero_dict = zarr_file.attrs["omero"]
-            for channel_dict in omero_dict["channels"]:
-                channel_name = channel_dict["label"]
-                channel_dict["window"]["start"] = percentile_values[channel_name][0]
-                channel_dict["window"]["end"] = percentile_values[channel_name][1]
-            zarr_file.attrs["omero"] = omero_dict
+        zarr_file = zarr.open(zarr_url, mode="a")
+        omero_dict = zarr_file.attrs["omero"]
+        for channel_dict in omero_dict["channels"]:
+            channel_name = channel_dict["label"]
+            channel_dict["window"]["start"] = float(percentile_values[channel_name][0])
+            channel_dict["window"]["end"] = float(percentile_values[channel_name][1])
+        zarr_file.attrs["omero"] = omero_dict
 
 
 if __name__ == "__main__":
