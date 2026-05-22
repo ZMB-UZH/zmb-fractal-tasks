@@ -70,7 +70,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/f3/8d/5e5be3ced1d12966fefb5c4ea3b2a5b480afcea36406559442c6e31d4a48/multidict-6.7.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/ef/82/7a9d0550484a62c6da82858ee9419f3dd1ccc9aa1c26a1e43da3ecd20b0d/natsort-8.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/9e/c9/b2622292ea83fbb4ec318f5b9ab867d0a28ab43c5717bb85b0a5f6b3b0a4/networkx-3.6.1-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/05/be/e1fc33763ff5df9a5c4c823f7031c581061ddc8eb8afa733a8e8c67b7866/ngio-0.5.10-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/35/b1/e36e603dbadd6e61f00e6fc82dbff9b1b461d9c4bf3a2d993a96ff67c1df/ngio-0.5.11-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/fb/53/78c98ef5c8b2b784453487f3e4d6c017b20747c58b470393e230c78d18e8/numcodecs-0.16.5-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/0f/50/de23fde84e45f5c4fda2488c759b69990fd4512387a8632860f3ac9cd225/numpy-1.26.4-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/3b/cd/154ca20c38269e05eff77c1464e6c1da89f50a6390b565e9d82e06bc11e1/nvidia_cublas-13.1.1.3-py3-none-manylinux_2_27_x86_64.whl
@@ -182,7 +182,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/a9/65/1caac9d4cd32e8433908683446eebc953e82d22b03d10d41a5f0fefe991b/multidict-6.7.1-cp312-cp312-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/ef/82/7a9d0550484a62c6da82858ee9419f3dd1ccc9aa1c26a1e43da3ecd20b0d/natsort-8.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/9e/c9/b2622292ea83fbb4ec318f5b9ab867d0a28ab43c5717bb85b0a5f6b3b0a4/networkx-3.6.1-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/05/be/e1fc33763ff5df9a5c4c823f7031c581061ddc8eb8afa733a8e8c67b7866/ngio-0.5.10-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/35/b1/e36e603dbadd6e61f00e6fc82dbff9b1b461d9c4bf3a2d993a96ff67c1df/ngio-0.5.11-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/f5/6c/86644987505dcb90ba6d627d6989c27bafb0699f9fd00187e06d05ea8594/numcodecs-0.16.5-cp312-cp312-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/75/5b/ca6c8bd14007e5ca171c7c03102d17b4f4e0ceb53957e8c44343a9546dcc/numpy-1.26.4-cp312-cp312-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/80/dd/3e3beee6716a4da1b60dc7dfc5d06d697bd015b11ed70c6c0bc0368aabc6/ome_zarr_models-1.7-py3-none-any.whl
@@ -281,7 +281,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/80/31/0b2517913687895f5904325c2069d6a3b78f66cc641a86a2baf75a05dcbb/multidict-6.7.1-cp312-cp312-win_amd64.whl
       - pypi: https://files.pythonhosted.org/packages/ef/82/7a9d0550484a62c6da82858ee9419f3dd1ccc9aa1c26a1e43da3ecd20b0d/natsort-8.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/9e/c9/b2622292ea83fbb4ec318f5b9ab867d0a28ab43c5717bb85b0a5f6b3b0a4/networkx-3.6.1-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/05/be/e1fc33763ff5df9a5c4c823f7031c581061ddc8eb8afa733a8e8c67b7866/ngio-0.5.10-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/35/b1/e36e603dbadd6e61f00e6fc82dbff9b1b461d9c4bf3a2d993a96ff67c1df/ngio-0.5.11-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/1c/20/2fdec87fc7f8cec950d2b0bea603c12dc9f05b4966dc5924ba5a36a61bf6/numcodecs-0.16.5-cp312-cp312-win_amd64.whl
       - pypi: https://files.pythonhosted.org/packages/16/2e/86f24451c2d530c88daf997cb8d6ac622c1d40d19f5a031ed68a4b73a374/numpy-1.26.4-cp312-cp312-win_amd64.whl
       - pypi: https://files.pythonhosted.org/packages/80/dd/3e3beee6716a4da1b60dc7dfc5d06d697bd015b11ed70c6c0bc0368aabc6/ome_zarr_models-1.7-py3-none-any.whl
@@ -437,7 +437,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/ef/82/7a9d0550484a62c6da82858ee9419f3dd1ccc9aa1c26a1e43da3ecd20b0d/natsort-8.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/a0/c4/c2971a3ba4c6103a3d10c4b0f24f461ddc027f0f09763220cf35ca1401b3/nest_asyncio-1.6.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/9e/c9/b2622292ea83fbb4ec318f5b9ab867d0a28ab43c5717bb85b0a5f6b3b0a4/networkx-3.6.1-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/05/be/e1fc33763ff5df9a5c4c823f7031c581061ddc8eb8afa733a8e8c67b7866/ngio-0.5.10-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/35/b1/e36e603dbadd6e61f00e6fc82dbff9b1b461d9c4bf3a2d993a96ff67c1df/ngio-0.5.11-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/88/b2/d0896bdcdc8d28a7fc5717c305f1a861c26e18c05047949fb371034d98bd/nodeenv-1.10.0-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/fb/53/78c98ef5c8b2b784453487f3e4d6c017b20747c58b470393e230c78d18e8/numcodecs-0.16.5-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/0f/50/de23fde84e45f5c4fda2488c759b69990fd4512387a8632860f3ac9cd225/numpy-1.26.4-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
@@ -620,7 +620,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/ef/82/7a9d0550484a62c6da82858ee9419f3dd1ccc9aa1c26a1e43da3ecd20b0d/natsort-8.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/a0/c4/c2971a3ba4c6103a3d10c4b0f24f461ddc027f0f09763220cf35ca1401b3/nest_asyncio-1.6.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/9e/c9/b2622292ea83fbb4ec318f5b9ab867d0a28ab43c5717bb85b0a5f6b3b0a4/networkx-3.6.1-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/05/be/e1fc33763ff5df9a5c4c823f7031c581061ddc8eb8afa733a8e8c67b7866/ngio-0.5.10-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/35/b1/e36e603dbadd6e61f00e6fc82dbff9b1b461d9c4bf3a2d993a96ff67c1df/ngio-0.5.11-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/88/b2/d0896bdcdc8d28a7fc5717c305f1a861c26e18c05047949fb371034d98bd/nodeenv-1.10.0-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/f5/6c/86644987505dcb90ba6d627d6989c27bafb0699f9fd00187e06d05ea8594/numcodecs-0.16.5-cp312-cp312-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/75/5b/ca6c8bd14007e5ca171c7c03102d17b4f4e0ceb53957e8c44343a9546dcc/numpy-1.26.4-cp312-cp312-macosx_11_0_arm64.whl
@@ -787,7 +787,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/ef/82/7a9d0550484a62c6da82858ee9419f3dd1ccc9aa1c26a1e43da3ecd20b0d/natsort-8.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/a0/c4/c2971a3ba4c6103a3d10c4b0f24f461ddc027f0f09763220cf35ca1401b3/nest_asyncio-1.6.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/9e/c9/b2622292ea83fbb4ec318f5b9ab867d0a28ab43c5717bb85b0a5f6b3b0a4/networkx-3.6.1-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/05/be/e1fc33763ff5df9a5c4c823f7031c581061ddc8eb8afa733a8e8c67b7866/ngio-0.5.10-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/35/b1/e36e603dbadd6e61f00e6fc82dbff9b1b461d9c4bf3a2d993a96ff67c1df/ngio-0.5.11-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/88/b2/d0896bdcdc8d28a7fc5717c305f1a861c26e18c05047949fb371034d98bd/nodeenv-1.10.0-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/1c/20/2fdec87fc7f8cec950d2b0bea603c12dc9f05b4966dc5924ba5a36a61bf6/numcodecs-0.16.5-cp312-cp312-win_amd64.whl
       - pypi: https://files.pythonhosted.org/packages/16/2e/86f24451c2d530c88daf997cb8d6ac622c1d40d19f5a031ed68a4b73a374/numpy-1.26.4-cp312-cp312-win_amd64.whl
@@ -2670,10 +2670,10 @@ packages:
   - pytest-mpl ; extra == 'test-extras'
   - pytest-randomly ; extra == 'test-extras'
   requires_python: '>=3.11,!=3.14.1'
-- pypi: https://files.pythonhosted.org/packages/05/be/e1fc33763ff5df9a5c4c823f7031c581061ddc8eb8afa733a8e8c67b7866/ngio-0.5.10-py3-none-any.whl
+- pypi: https://files.pythonhosted.org/packages/35/b1/e36e603dbadd6e61f00e6fc82dbff9b1b461d9c4bf3a2d993a96ff67c1df/ngio-0.5.11-py3-none-any.whl
   name: ngio
-  version: 0.5.10
-  sha256: 718e50f27047110dc2c1dee5650da7e98dc38f44c667cd2aa1bc061b27049944
+  version: 0.5.11
+  sha256: d9c936712f965921efdbd07130274c1bca861c51ffecf9dbfd6e76da0c285429
   requires_dist:
   - aiohttp
   - anndata>=0.12.0,<0.13.0
@@ -4884,14 +4884,14 @@ packages:
   requires_python: '>=3.8'
 - pypi: ./
   name: zmb-fractal-tasks
-  version: 0.4.3a2.dev2+g2ad23b496.d20260522
-  sha256: 81b33ff057d163113231bbe479b2d0bf878976a64ab9261c8640b3c28c1f4425
+  version: 0.4.3a2.dev6+g014c8ee12.d20260522
+  sha256: 7766e6426e47dde856509c07938459a0fb92c3c43087639dc3eee1817f8de883
   requires_dist:
   - anndata
   - basicpy>=2.0
   - dask
   - fractal-task-tools>=0.5.0
-  - ngio>=0.5.10,<0.6.0
+  - ngio>=0.5.11,<0.6.0
   - numpy
   - pandas
   - pydantic
