@@ -114,4 +114,13 @@ TASK_LIST = [
         category="Utility",
         tags=["Export", "CSV", "Table"],
     ),
+    CompoundTask(
+        name="Extract images from plate",
+        executable_init="extract_images_from_plate_init.py",
+        executable="extract_images_from_plate_parallel.py",
+        meta_init={"cpus_per_task": 1, "mem": 4000},
+        meta={"cpus_per_task": 1, "mem": 4000},
+        category="Utility",
+        tags=["Extract", "QuPath"],
+    ),
 ]
