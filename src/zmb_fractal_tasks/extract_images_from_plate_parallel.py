@@ -51,6 +51,7 @@ def extract_images_from_plate_parallel(
         logging.info(f"Copying level {level_path} (shape {src_img.shape}).")
         da.store(da.from_zarr(src_img.zarr_array), dst_img.zarr_array, lock=False)
 
+    # TODO: figure out how to remove "plate" metadata from the new OME-Zarr
     return {
         "image_list_updates": [
             {
