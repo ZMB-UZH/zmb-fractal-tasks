@@ -308,7 +308,7 @@ def extract_images_from_plate_init(
                 ome_dir.mkdir(exist_ok=True)
                 _write_zarr_group_metadata(ome_dir, zarr_format)
                 (ome_dir / "METADATA.ome.xml").write_text(
-                    _generate_ome_xml(images_info)
+                    _generate_ome_xml(images_info), encoding="utf-8"
                 )
                 logging.info(
                     f"Written OME-XML at {ome_dir / 'METADATA.ome.xml'} "

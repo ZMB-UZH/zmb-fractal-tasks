@@ -45,7 +45,7 @@ def test_extract_images_from_plate_init_folder_name(zarr_MIP_path, tmp_path):
 
     # init_args should point back to the source image
     init_args = item["init_args"]
-    assert init_args["zarr_url_source"] == str(zarr_MIP_path / "B" / "03" / "0")
+    assert init_args["zarr_url_source"] == (zarr_MIP_path / "B" / "03" / "0").as_posix()
 
 
 def test_extract_images_from_plate_init_all_acquisitions(zarr_MIP_path, tmp_path):
