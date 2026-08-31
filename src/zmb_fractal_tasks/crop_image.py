@@ -171,6 +171,20 @@ def _cropped_shape_and_translation(
     return shape, translation
 
 
+def _copy_cropped_array(
+    source: "Image | Label", destination: "Image | Label", slices: dict[str, slice]
+) -> None:
+    """Copy the cropped region of `source` into `destination`.
+
+    The patch is rechunked to the chunks of the destination, so that every dask
+    task writes to exactly one chunk. Without this, several tasks can write to
+    the same chunk concurrently, which makes the atomic rename that zarr uses
+    fail with a PermissionError on Windows.
+    """
+    patch = source.get_array(mode="dask", **slices)
+    destination.set_array(patch.rechunk(destination.chunks))
+
+
 def _crop_image_data(
     omezarr: "OmeZarrContainer",
     source_image: "Image",
@@ -195,7 +209,7 @@ def _crop_image_data(
         overwrite=True,
     )
     new_image = new_omezarr.get_image()
-    new_image.set_array(source_image.get_array(mode="dask", **slices))
+    _copy_cropped_array(source_image, new_image, slices)
     new_image.consolidate()
     return new_omezarr
 
@@ -219,7 +233,7 @@ def _crop_labels(
             dtype=source_label.dtype,
             overwrite=True,
         )
-        new_label.set_array(source_label.get_array(mode="dask", **slices))
+        _copy_cropped_array(source_label, new_label, slices)
         new_label.consolidate()
 
 

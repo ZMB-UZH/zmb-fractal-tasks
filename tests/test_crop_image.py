@@ -4,7 +4,7 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-from ngio import open_ome_zarr_container, open_ome_zarr_plate
+from ngio import Image, open_ome_zarr_container, open_ome_zarr_plate
 from pydantic import ValidationError
 
 from zmb_fractal_tasks.crop_image import AxisCrop, crop_image
@@ -210,3 +210,41 @@ def test_axis_crop_micrometer_on_channel(zarr_MIP_path):
             zarr_url=zarr_url,
             crops=[AxisCrop(axis="c", end=2, unit="micrometer")],
         )
+
+
+def test_crop_image_one_dask_block_per_chunk(zarr_MIP_path, monkeypatch):
+    """Every dask block must be written into a single destination chunk.
+
+    If several blocks land in the same chunk, they are written concurrently
+    (ngio calls `da.store` with `lock=False`), which makes the atomic rename
+    that zarr uses fail with a PermissionError on Windows.
+    """
+    recorded = []
+    original_set_array = Image.set_array
+
+    def recording_set_array(self, patch, *args, **kwargs):
+        recorded.append((patch.chunks, self.chunks))
+        return original_set_array(self, patch, *args, **kwargs)
+
+    monkeypatch.setattr(Image, "set_array", recording_set_array)
+
+    zarr_url = str(zarr_MIP_path / "B" / "03" / "0")
+    # A fractional crop along y spans several chunks of the source image
+    crop_image(
+        zarr_url=zarr_url,
+        crops=[AxisCrop(axis="y", start=0.25, end=0.75, unit="fraction")],
+        crop_labels=False,
+        copy_tables=False,
+    )
+
+    assert recorded, "no array was written"
+    for block_sizes, dest_chunks in recorded:
+        for sizes, chunk in zip(block_sizes, dest_chunks, strict=True):
+            assert all(size <= chunk for size in sizes)
+            offset = 0
+            for size in sizes[:-1]:
+                offset += size
+                assert offset % chunk == 0, (
+                    f"block boundary at {offset} is not on a chunk boundary "
+                    f"(chunk size {chunk})"
+                )
