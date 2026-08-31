@@ -7,7 +7,13 @@ from typing import TYPE_CHECKING, Any, Literal, Optional
 
 from ngio import open_ome_zarr_container, open_ome_zarr_plate
 from ngio.tables import GenericRoiTable
-from pydantic import BaseModel, field_validator, model_validator, validate_call
+from pydantic import (
+    BaseModel,
+    Field,
+    field_validator,
+    model_validator,
+    validate_call,
+)
 
 if TYPE_CHECKING:
     from ngio import Image, Label, OmeZarrContainer, PixelSize, Roi
@@ -68,6 +74,94 @@ class AxisCrop(BaseModel):
                 f"The end of axis '{self.axis}' must be larger than its start."
             )
         return self
+
+
+class AxisChunkSize(BaseModel):
+    """Chunk size along one axis of the cropped image."""
+
+    axis: str = "x"
+    """Name of the axis, as it is named in the OME-Zarr metadata (typically
+    `x`, `y`, `z`, `t` or `c`)."""
+
+    size: int = Field(gt=0)
+    """Chunk size along this axis, in pixels."""
+
+    @field_validator("axis", mode="after")
+    @classmethod
+    def validate_axis(cls, value: str) -> str:
+        """Ensure the axis name is a non-empty string."""
+        value = value.strip()
+        if not value:
+            raise ValueError("The axis name must be a non-empty string.")
+        return value
+
+
+class AdvancedOptions(BaseModel):
+    """Advanced options of the crop task."""
+
+    crop_labels: bool = True
+    """If `True`, all label images are cropped to the same region and stored in
+    the cropped image. If `False`, the label images are not copied to the
+    cropped image."""
+
+    copy_tables: bool = True
+    """If `True`, all tables are copied to the cropped image. ROI tables are
+    clipped to the crop region and ROIs that lie completely outside of it are
+    dropped. Feature tables are copied unchanged, so they may still contain
+    rows of labels that were cropped away."""
+
+    new_image_suffix: str = "_cropped"
+    """Suffix that is appended to the name of the input image to name the
+    cropped image. Only relevant if `overwrite_input_image=False`."""
+
+    new_chunk_sizes: Optional[list[AxisChunkSize]] = None
+    """New chunk sizes of the cropped image, one entry per axis. Axes that are
+    not listed keep the chunk size of the input image. Leave empty to keep the
+    chunking of the input image."""
+
+
+# Module-level singleton, so that the default does not need a call in the
+# signature of the task. It is never mutated.
+_DEFAULT_ADVANCED_OPTIONS = AdvancedOptions()
+
+
+def _resolve_chunk_sizes(
+    new_chunk_sizes: Optional[list[AxisChunkSize]], image: "Image"
+) -> dict[str, int]:
+    """Validate the requested chunk sizes against the axes of the image."""
+    requested: dict[str, int] = {}
+    for chunk_size in new_chunk_sizes or []:
+        axis = chunk_size.axis
+        if axis in requested:
+            raise ValueError(
+                f"Axis '{axis}' is given more than once in `new_chunk_sizes`. "
+                "Specify at most one chunk size per axis."
+            )
+        if image.dimensions.get(axis) is None:
+            raise ValueError(
+                f"Axis '{axis}' does not exist in the image. Available axes: "
+                f"{list(image.axes)}."
+            )
+        requested[axis] = chunk_size.size
+    return requested
+
+
+def _chunks_for(
+    image: "Image | Label", new_chunk_sizes: dict[str, int]
+) -> Optional[tuple[int, ...]]:
+    """Return the chunk shape of the cropped image, or None to inherit it.
+
+    Axes that are not listed keep the chunk size of the input image, and axes
+    that do not exist in the image (e.g. `c` for a label image) are ignored.
+    Note that zarr caps every chunk at the size of the array, so a chunk can
+    end up smaller than requested along a heavily cropped axis.
+    """
+    if not new_chunk_sizes:
+        return None
+    return tuple(
+        new_chunk_sizes.get(axis, chunk)
+        for axis, chunk in zip(image.axes, image.chunks, strict=True)
+    )
 
 
 def _resolve_crops(
@@ -190,6 +284,7 @@ def _crop_image_data(
     source_image: "Image",
     region: dict[str, tuple[float, float]],
     zarr_url_new: Path,
+    new_chunk_sizes: dict[str, int],
 ) -> "OmeZarrContainer":
     """Derive a new OME-Zarr image containing only the cropped region."""
     slices = _region_to_slices(region, source_image)
@@ -206,6 +301,7 @@ def _crop_image_data(
         translation=translation,
         channels_meta=channels_meta,
         dtype=source_image.dtype,
+        chunks=_chunks_for(source_image, new_chunk_sizes),
         overwrite=True,
     )
     new_image = new_omezarr.get_image()
@@ -218,6 +314,7 @@ def _crop_labels(
     omezarr: "OmeZarrContainer",
     new_omezarr: "OmeZarrContainer",
     region: dict[str, tuple[float, float]],
+    new_chunk_sizes: dict[str, int],
 ) -> None:
     """Crop all label images of the input and store them in the new image."""
     for label_name in omezarr.list_labels():
@@ -231,6 +328,7 @@ def _crop_labels(
             shape=shape,
             translation=translation,
             dtype=source_label.dtype,
+            chunks=_chunks_for(source_label, new_chunk_sizes),
             overwrite=True,
         )
         _copy_cropped_array(source_label, new_label, slices)
@@ -360,11 +458,9 @@ def crop_image(
     zarr_url: str,
     # Core parameters
     crops: list[AxisCrop],
-    crop_labels: bool = True,
-    copy_tables: bool = True,
-    # Advanced parameters
     overwrite_input_image: bool = False,
-    new_image_suffix: str = "_cropped",
+    # Advanced parameters
+    advanced_options: AdvancedOptions = _DEFAULT_ADVANCED_OPTIONS,
 ) -> dict[str, Any]:
     """Crop an OME-Zarr image along any of its dimensions.
 
@@ -382,28 +478,21 @@ def crop_image(
         crops: Ranges to crop to, one entry per axis. Axes that are not listed
             here are kept in full. Within an entry, leaving `start` or `end`
             empty means "from the beginning" / "until the end" of that axis.
-        crop_labels: If `True`, all label images are cropped to the same region
-            and stored in the cropped image. If `False`, the label images are
-            not copied to the cropped image.
-        copy_tables: If `True`, all tables are copied to the cropped image. ROI
-            tables are clipped to the crop region and ROIs that lie completely
-            outside of it are dropped. Feature tables are copied unchanged, so
-            they may still contain rows of labels that were cropped away.
         overwrite_input_image: If `True`, the input image is replaced by the
             cropped image. If `False`, a new image (with the same acquisition
             ID) is created next to the input image and the input image is left
             untouched. NOTE: cropping cannot be undone, so only overwrite the
             input image if you are sure about the crop region.
-        new_image_suffix: Suffix that is appended to the name of the input
-            image to name the cropped image. Only relevant if
-            `overwrite_input_image=False`.
+        advanced_options: Options that rarely need to be changed: which labels
+            and tables to carry over, how the new image is named and how it is
+            chunked.
     """
     if not crops:
         raise ValueError(
             "No crop was specified. Add at least one axis to `crops`, "
             "otherwise the task would only duplicate the input image."
         )
-    if not overwrite_input_image and not new_image_suffix:
+    if not overwrite_input_image and not advanced_options.new_image_suffix:
         raise ValueError(
             "`new_image_suffix` must not be empty if the input image is not "
             "overwritten, since the cropped image would otherwise overwrite it."
@@ -413,16 +502,22 @@ def crop_image(
     omezarr = open_ome_zarr_container(zarr_url)
     source_image = omezarr.get_image()
     region = _resolve_crops(crops, source_image)
+    chunk_sizes = _resolve_chunk_sizes(advanced_options.new_chunk_sizes, source_image)
 
     if overwrite_input_image:
         zarr_url_new = zarr_url_path.parent / f"{zarr_url_path.name}__crop_tmp"
     else:
-        zarr_url_new = zarr_url_path.parent / f"{zarr_url_path.name}{new_image_suffix}"
+        zarr_url_new = (
+            zarr_url_path.parent
+            / f"{zarr_url_path.name}{advanced_options.new_image_suffix}"
+        )
 
-    new_omezarr = _crop_image_data(omezarr, source_image, region, zarr_url_new)
-    if crop_labels:
-        _crop_labels(omezarr, new_omezarr, region)
-    if copy_tables:
+    new_omezarr = _crop_image_data(
+        omezarr, source_image, region, zarr_url_new, chunk_sizes
+    )
+    if advanced_options.crop_labels:
+        _crop_labels(omezarr, new_omezarr, region, chunk_sizes)
+    if advanced_options.copy_tables:
         _copy_tables(omezarr, new_omezarr, region, source_image.pixel_size)
 
     if overwrite_input_image:

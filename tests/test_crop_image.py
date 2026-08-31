@@ -7,7 +7,12 @@ import pytest
 from ngio import Image, open_ome_zarr_container, open_ome_zarr_plate
 from pydantic import ValidationError
 
-from zmb_fractal_tasks.crop_image import AxisCrop, crop_image
+from zmb_fractal_tasks.crop_image import (
+    AdvancedOptions,
+    AxisChunkSize,
+    AxisCrop,
+    crop_image,
+)
 
 
 def test_crop_image_new_image(zarr_MIP_path):
@@ -124,8 +129,7 @@ def test_crop_image_labels_and_tables(zarr_MIP_path):
     result = crop_image(
         zarr_url=zarr_url,
         crops=[AxisCrop(axis="x", start=100, end=300)],
-        crop_labels=True,
-        copy_tables=True,
+        advanced_options=AdvancedOptions(crop_labels=True, copy_tables=True),
     )
     new_omezarr = open_ome_zarr_container(result["image_list_updates"][0]["zarr_url"])
 
@@ -233,8 +237,7 @@ def test_crop_image_one_dask_block_per_chunk(zarr_MIP_path, monkeypatch):
     crop_image(
         zarr_url=zarr_url,
         crops=[AxisCrop(axis="y", start=0.25, end=0.75, unit="fraction")],
-        crop_labels=False,
-        copy_tables=False,
+        advanced_options=AdvancedOptions(crop_labels=False, copy_tables=False),
     )
 
     assert recorded, "no array was written"
@@ -248,3 +251,123 @@ def test_crop_image_one_dask_block_per_chunk(zarr_MIP_path, monkeypatch):
                     f"block boundary at {offset} is not on a chunk boundary "
                     f"(chunk size {chunk})"
                 )
+
+
+def test_crop_image_new_chunk_sizes(zarr_MIP_path):
+    """Listed axes get the requested chunk size, the others keep the input's."""
+    zarr_url = str(zarr_MIP_path / "B" / "03" / "0")
+    source_omezarr = open_ome_zarr_container(zarr_url)
+    source_chunks = source_omezarr.get_image().chunks
+    axes = source_omezarr.get_image().axes
+
+    result = crop_image(
+        zarr_url=zarr_url,
+        crops=[AxisCrop(axis="x", start=100, end=1100)],
+        advanced_options=AdvancedOptions(
+            new_chunk_sizes=[
+                AxisChunkSize(axis="x", size=256),
+                AxisChunkSize(axis="y", size=512),
+            ]
+        ),
+    )
+    new_omezarr = open_ome_zarr_container(result["image_list_updates"][0]["zarr_url"])
+
+    expected = tuple(
+        {"x": 256, "y": 512}.get(axis, chunk)
+        for axis, chunk in zip(axes, source_chunks, strict=True)
+    )
+    assert new_omezarr.get_image().chunks == expected
+
+    # Labels get the same chunk sizes, ignoring the axes they do not have
+    for label_name in new_omezarr.list_labels():
+        label = new_omezarr.get_label(label_name)
+        label_expected = tuple(
+            {"x": 256, "y": 512}.get(axis, chunk)
+            for axis, chunk in zip(
+                label.axes, source_omezarr.get_label(label_name).chunks, strict=True
+            )
+        )
+        assert label.chunks == label_expected
+
+
+def test_crop_image_default_chunk_sizes_are_inherited(zarr_MIP_path):
+    """Without new_chunk_sizes the input chunking is kept, capped by the crop."""
+    zarr_url = str(zarr_MIP_path / "B" / "03" / "0")
+    source_image = open_ome_zarr_container(zarr_url).get_image()
+    source_chunks = source_image.chunks
+    axes = source_image.axes
+
+    result = crop_image(
+        zarr_url=zarr_url, crops=[AxisCrop(axis="x", start=100, end=1100)]
+    )
+    new_image = open_ome_zarr_container(
+        result["image_list_updates"][0]["zarr_url"]
+    ).get_image()
+
+    # zarr caps every chunk at the size of the array, so the 1000-pixel-wide
+    # crop shrinks the x chunk while the other axes keep the input chunking
+    cropped_sizes = dict(zip(axes, source_image.shape, strict=True)) | {"x": 1000}
+    expected = tuple(
+        min(chunk, cropped_sizes[axis])
+        for axis, chunk in zip(axes, source_chunks, strict=True)
+    )
+    assert new_image.chunks == expected
+    assert new_image.chunks[axes.index("x")] == 1000
+
+
+def test_crop_image_chunk_size_unknown_axis(zarr_MIP_path):
+    """A chunk size for a non-existing axis is rejected."""
+    zarr_url = str(zarr_MIP_path / "B" / "03" / "0")
+    with pytest.raises(ValueError, match="does not exist in the image"):
+        crop_image(
+            zarr_url=zarr_url,
+            crops=[AxisCrop(axis="x", end=100)],
+            advanced_options=AdvancedOptions(
+                new_chunk_sizes=[AxisChunkSize(axis="q", size=128)]
+            ),
+        )
+
+
+def test_crop_image_chunk_size_duplicate_axis(zarr_MIP_path):
+    """The same axis cannot get two chunk sizes."""
+    zarr_url = str(zarr_MIP_path / "B" / "03" / "0")
+    with pytest.raises(ValueError, match="given more than once"):
+        crop_image(
+            zarr_url=zarr_url,
+            crops=[AxisCrop(axis="x", end=100)],
+            advanced_options=AdvancedOptions(
+                new_chunk_sizes=[
+                    AxisChunkSize(axis="x", size=128),
+                    AxisChunkSize(axis="x", size=256),
+                ]
+            ),
+        )
+
+
+@pytest.mark.parametrize("size", [0, -1])
+def test_axis_chunk_size_validation(size):
+    """Chunk sizes must be positive."""
+    with pytest.raises(ValidationError):
+        AxisChunkSize(axis="x", size=size)
+
+
+def test_crop_image_custom_suffix_via_advanced_options(zarr_MIP_path):
+    """A suffix set in advanced_options is used to name the new image."""
+    zarr_url = str(zarr_MIP_path / "B" / "03" / "0")
+    result = crop_image(
+        zarr_url=zarr_url,
+        crops=[AxisCrop(axis="x", end=200)],
+        advanced_options=AdvancedOptions(new_image_suffix="_roi"),
+    )
+    assert Path(result["image_list_updates"][0]["zarr_url"]).name == "0_roi"
+
+
+def test_crop_image_empty_suffix_rejected(zarr_MIP_path):
+    """An empty suffix would overwrite the input image, so it is rejected."""
+    zarr_url = str(zarr_MIP_path / "B" / "03" / "0")
+    with pytest.raises(ValueError, match="must not be empty"):
+        crop_image(
+            zarr_url=zarr_url,
+            crops=[AxisCrop(axis="x", end=200)],
+            advanced_options=AdvancedOptions(new_image_suffix=""),
+        )
