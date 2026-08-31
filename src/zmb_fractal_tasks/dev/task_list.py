@@ -114,6 +114,13 @@ TASK_LIST = [
         category="Utility",
         tags=["Export", "CSV", "Table"],
     ),
+    ParallelTask(
+        name="Crop image",
+        executable="crop_image.py",
+        meta={"cpus_per_task": 1, "mem": 4000},
+        category="Utility",
+        tags=["Crop", "Subset", "Trim", "Region"],
+    ),
     CompoundTask(
         name="Extract images from plate",
         executable_init="extract_images_from_plate_init.py",

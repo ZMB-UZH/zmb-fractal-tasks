@@ -1638,6 +1638,179 @@
       "docs_info": "## export_table_as_csv\nCombine and export tables from multiple OME-Zarr files to CSV.\n"
     },
     {
+      "name": "Crop image",
+      "category": "Utility",
+      "tags": [
+        "Crop",
+        "Subset",
+        "Trim",
+        "Region"
+      ],
+      "type": "parallel",
+      "executable_parallel": "crop_image.py",
+      "meta_parallel": {
+        "cpus_per_task": 1,
+        "mem": 4000
+      },
+      "args_schema_parallel": {
+        "$defs": {
+          "AdvancedOptions": {
+            "description": "Advanced options of the crop task.",
+            "properties": {
+              "crop_labels": {
+                "default": true,
+                "description": "If `True`, all label images are cropped to the same region and stored in\nthe cropped image. If `False`, the label images are not copied to the\ncropped image.",
+                "title": "Crop Labels",
+                "type": "boolean"
+              },
+              "copy_tables": {
+                "default": true,
+                "description": "If `True`, all tables are copied to the cropped image. ROI tables are\nclipped to the crop region and ROIs that lie completely outside of it are\ndropped. Feature tables are copied unchanged, so they may still contain\nrows of labels that were cropped away.",
+                "title": "Copy Tables",
+                "type": "boolean"
+              },
+              "new_image_suffix": {
+                "default": "_cropped",
+                "description": "Suffix that is appended to the name of the input image to name the\ncropped image. Only relevant if `overwrite_input_image=False`.",
+                "title": "New Image Suffix",
+                "type": "string"
+              },
+              "new_chunk_sizes": {
+                "anyOf": [
+                  {
+                    "items": {
+                      "$ref": "#/$defs/AxisChunkSize"
+                    },
+                    "type": "array"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "New chunk sizes of the cropped image, one entry per axis. Axes that are\nnot listed keep the chunk size of the input image. Leave empty to keep the\nchunking of the input image.",
+                "title": "New Chunk Sizes"
+              }
+            },
+            "title": "AdvancedOptions",
+            "type": "object"
+          },
+          "AxisChunkSize": {
+            "description": "Chunk size along one axis of the cropped image.",
+            "properties": {
+              "axis": {
+                "default": "x",
+                "description": "Name of the axis, as it is named in the OME-Zarr metadata (typically\n`x`, `y`, `z`, `t` or `c`).",
+                "title": "Axis",
+                "type": "string"
+              },
+              "size": {
+                "description": "Chunk size along this axis, in pixels.",
+                "exclusiveMinimum": 0,
+                "title": "Size",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "size"
+            ],
+            "title": "AxisChunkSize",
+            "type": "object"
+          },
+          "AxisCrop": {
+            "description": "Crop range along one axis of an OME-Zarr image.",
+            "properties": {
+              "axis": {
+                "default": "x",
+                "description": "Name of the axis to crop, as it is named in the OME-Zarr metadata\n(typically `x`, `y`, `z`, `t` or `c`).",
+                "title": "Axis",
+                "type": "string"
+              },
+              "unit": {
+                "default": "pixel",
+                "description": "How `start` and `end` are interpreted. `pixel`: indices at the\nhighest-resolution level. `micrometer`: distance from the image origin, in\nthe physical unit of the image (only for the spatial axes `x`, `y`, `z`).\n`fraction`: relative position along the axis, between 0.0 and 1.0.",
+                "enum": [
+                  "pixel",
+                  "micrometer",
+                  "fraction"
+                ],
+                "title": "Unit",
+                "type": "string"
+              },
+              "start": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Where the crop starts along this axis. Leave empty to start at the\nbeginning of the axis.",
+                "title": "Start"
+              },
+              "end": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Where the crop ends along this axis (exclusive). Leave empty to crop\nuntil the end of the axis.",
+                "title": "End"
+              }
+            },
+            "title": "AxisCrop",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "zarr_url": {
+            "title": "Zarr Url",
+            "type": "string",
+            "description": "Path or url to the individual OME-Zarr image to be processed. (standard argument for Fractal tasks, managed by Fractal server)."
+          },
+          "crops": {
+            "items": {
+              "$ref": "#/$defs/AxisCrop"
+            },
+            "title": "Crops",
+            "type": "array",
+            "description": "Ranges to crop to, one entry per axis. Axes that are not listed here are kept in full. Within an entry, leaving `start` or `end` empty means \"from the beginning\" / \"until the end\" of that axis."
+          },
+          "overwrite_input_image": {
+            "default": false,
+            "title": "Overwrite Input Image",
+            "type": "boolean",
+            "description": "If `True`, the input image is replaced by the cropped image. If `False`, a new image (with the same acquisition ID) is created next to the input image and the input image is left untouched. NOTE: cropping cannot be undone, so only overwrite the input image if you are sure about the crop region."
+          },
+          "advanced_options": {
+            "$ref": "#/$defs/AdvancedOptions",
+            "default": {
+              "crop_labels": true,
+              "copy_tables": true,
+              "new_image_suffix": "_cropped",
+              "new_chunk_sizes": null
+            },
+            "title": "Advanced Options",
+            "description": "Options that rarely need to be changed: which labels and tables to carry over, how the new image is named and how it is chunked."
+          }
+        },
+        "required": [
+          "zarr_url",
+          "crops"
+        ],
+        "type": "object",
+        "title": "CropImage"
+      },
+      "docs_info": "## crop_image\nCrop an OME-Zarr image along any of its dimensions.\n\nAdd one entry to `crops` per axis you want to crop (e.g. `x`, `y`, `z`, `t`\nor `c`); all other axes are kept in full. Every entry has its own unit, so\nyou can e.g. crop `x` and `y` in micrometer while cropping `z` in pixels\n(i.e. planes).\n\nThe position of the crop is stored in the OME-Zarr metadata, so that the\ncropped image stays at its original position in world coordinates.\n"
+    },
+    {
       "name": "Extract images from plate",
       "category": "Utility",
       "tags": [
