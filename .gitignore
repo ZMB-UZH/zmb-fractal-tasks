@@ -110,3 +110,9 @@ ENV/
 # IDE settings
 .vscode/
 .idea/
+
+# pixi
+.pixi/
+
+# test data downloaded by tests/conftest.py
+data/
