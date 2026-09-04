@@ -112,7 +112,8 @@ class AdvancedOptions(BaseModel):
 
     new_image_suffix: str = "_cropped"
     """Suffix that is appended to the name of the input image to name the
-    cropped image. Only relevant if `overwrite_input_image=False`."""
+    cropped image. If an image with that name already exists, it is
+    overwritten. Only relevant if `overwrite_input_image=False`."""
 
     new_chunk_sizes: Optional[list[AxisChunkSize]] = None
     """New chunk sizes of the cropped image, one entry per axis. Axes that are
@@ -440,6 +441,14 @@ def _register_image_in_plate(zarr_url: Path, zarr_url_new: Path) -> None:
         logging.info(
             f"{zarr_url} does not seem to be part of an OME-Zarr plate. The "
             "cropped image is not added to any plate metadata."
+        )
+        return
+    if zarr_url_new.name in ome_zarr_plate.get_well(row=row, column=column).paths():
+        # The task was run before with the same suffix. The image data has just
+        # been overwritten, so the existing plate entry is still correct.
+        logging.info(
+            f"{zarr_url_new.name} is already registered in well {row}/{column} "
+            "of the plate."
         )
         return
     ome_zarr_plate.atomic_add_image(

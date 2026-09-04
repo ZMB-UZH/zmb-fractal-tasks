@@ -1671,7 +1671,7 @@
               },
               "new_image_suffix": {
                 "default": "_cropped",
-                "description": "Suffix that is appended to the name of the input image to name the\ncropped image. Only relevant if `overwrite_input_image=False`.",
+                "description": "Suffix that is appended to the name of the input image to name the\ncropped image. If an image with that name already exists, it is\noverwritten. Only relevant if `overwrite_input_image=False`.",
                 "title": "New Image Suffix",
                 "type": "string"
               },

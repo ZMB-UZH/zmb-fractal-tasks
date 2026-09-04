@@ -55,6 +55,24 @@ def test_crop_image_registers_in_plate(zarr_MIP_path):
     assert "B/03/0_cropped" in plate.images_paths()
 
 
+def test_crop_image_rerun_is_idempotent(zarr_MIP_path):
+    """Re-running the task overwrites the cropped image without failing."""
+    zarr_url = str(zarr_MIP_path / "B" / "03" / "0")
+    crop_image(zarr_url=zarr_url, crops=[AxisCrop(axis="x", end=200)])
+
+    # A second run must not fail on the plate metadata, which already lists the
+    # cropped image.
+    result = crop_image(zarr_url=zarr_url, crops=[AxisCrop(axis="x", end=123)])
+
+    zarr_url_new = result["image_list_updates"][0]["zarr_url"]
+    new_image = open_ome_zarr_container(zarr_url_new).get_image()
+    assert new_image.dimensions.get("x") == 123
+
+    # The image is registered exactly once
+    plate = open_ome_zarr_plate(zarr_MIP_path)
+    assert plate.images_paths().count("B/03/0_cropped") == 1
+
+
 def test_crop_image_pyramid_and_translation(zarr_MIP_path):
     """All pyramid levels are rebuilt and the crop keeps its world position."""
     zarr_url = str(zarr_MIP_path / "B" / "03" / "0")
